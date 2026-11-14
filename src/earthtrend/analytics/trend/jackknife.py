@@ -31,6 +31,13 @@ def _sen_mk(years: FloatArray, values: FloatArray, alpha: float) -> tuple[float,
 def jackknife(
     years: IntArray, annual: FloatArray, alpha: float = config.ALPHA
 ) -> JackknifeResult | None:
+    """Leave-one-year-out influence of single years on the Sen slope and MK p-value.
+
+    For each year k: slope_(-k) = Sen slope without year k. Relative change =
+    |slope_(-k) - slope| / |slope|. A year is influential if the full trend is significant
+    and max relative change > REL_CHANGE_LIMIT (0.30), or dropping it makes p >= alpha.
+    Sen slope after Sen (1968); MK variance with AR(1) correction (Hamed & Rao 1998).
+    """
     yf = years.astype(np.float64)
     full = _sen_mk(yf, annual, alpha)
     if full is None:

@@ -39,6 +39,9 @@ def decide(
     alpha: float = config.ALPHA,
     ols_annual: TrendTest | None = None,
 ) -> Verdict:
+    """Stage 1 verdict (``verdict_rules_v0``): strong when annual-mean OLS p < alpha and MK
+    confirms with the same sign at p < MK_CONFIRM_P; inadmissible on QC; else no_evidence.
+    """
     codes = {f.code for f in flags}
     caveats = [c for c in CAVEAT_FLAGS if c in codes]
 

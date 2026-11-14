@@ -87,6 +87,9 @@ def _pelt(grid: FloatArray, y: FloatArray) -> list[float]:
 def detect_changepoints(
     t: FloatArray, y: FloatArray, step: float, label_month: int = 1, seed: int = 42
 ) -> list[Changepoint]:
+    """Changepoints of the trend component (section 5.6): Rbeast (Zhao et al., 2019) with
+    probability > 0.5 and a fixed MCMC seed; ruptures PELT as fallback; < 24 points -> [].
+    """
     ok = np.isfinite(t)
     t, y = t[ok], y[ok]
     if t.size < 24 or np.isfinite(y).sum() < 24:

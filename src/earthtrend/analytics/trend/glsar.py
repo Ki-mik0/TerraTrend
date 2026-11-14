@@ -15,6 +15,8 @@ from earthtrend.analytics.preprocess.aggregate import FloatArray
 
 @dataclass(frozen=True)
 class GlsarFit:
+    """GLSAR trend estimate: slope per year, 95% CI, p-value, t, AR(1) coefficient rho, n."""
+
     slope: float  # per year
     ci95: tuple[float, float]
     p_value: float
@@ -24,6 +26,12 @@ class GlsarFit:
 
 
 def glsar_trend(t: FloatArray, y: FloatArray, maxiter: int = 10) -> GlsarFit | None:
+    """Linear trend with AR(1) errors by feasible GLS (iterated Cochrane-Orcutt).
+
+    Model: y_t = a + b t + u_t, u_t = rho u_(t-1) + e_t. Each iteration estimates rho from
+    the residuals and refits OLS on quasi-differenced data y_t - rho y_(t-1).
+    Uses statsmodels GLSAR. Returns None for fewer than 10 valid points.
+    """
     from statsmodels.regression.linear_model import GLSAR
 
     ok = np.isfinite(t) & np.isfinite(y)

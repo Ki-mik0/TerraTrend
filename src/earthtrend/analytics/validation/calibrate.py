@@ -48,6 +48,7 @@ WEATHERHEAD_RANGE = (0.80, 0.97)
 
 
 def wilson(p: float, n: int, z: float = 1.96) -> tuple[float, float]:
+    """Wilson score interval for k successes out of n (95% by default)."""
     den = 1 + z * z / n
     centre = (p + z * z / (2 * n)) / den
     half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / den
@@ -55,6 +56,10 @@ def wilson(p: float, n: int, z: float = 1.96) -> tuple[float, float]:
 
 
 def null_scenarios() -> list[Scenario]:
+    """Null scenarios of the Stage 4 calibration: AR(1) at several phi, gaps, skewed gamma,
+    IAAFT long-memory surrogates, shared-weather witness; plus real-series surrogates when
+    the fixtures exist (section 13.1).
+    """
     scs = [
         Scenario("ar1_phi0.0", "ar1", 0.0),
         Scenario("ar1_phi0.3", "ar1", 0.3),
@@ -78,6 +83,9 @@ def null_scenarios() -> list[Scenario]:
 
 
 def run(runs: int, verdict_runs: int, power_runs: int, workers: int) -> dict[str, Any]:
+    """Monte-Carlo calibration: false-alarm rates per method and of the decision rule, false
+    proven/strong, power curve vs the Weatherhead slope, reference cases, acceptance checks.
+    """
     report: dict[str, Any] = {
         "fingerprint": calibration_fingerprint(),
         "ruleset": "verdict_rules_v1",
@@ -189,6 +197,7 @@ def _cell(fa: dict[str, Any], k: str) -> str:
 
 
 def write_markdown(report: dict[str, Any], path: Path) -> None:
+    """Human-readable calibration report (``docs/validation/calibration_v1.md``)."""
     lines = [
         "# Calibration report — verdict_rules_v1",
         "",
@@ -259,6 +268,7 @@ def write_markdown(report: dict[str, Any], path: Path) -> None:
 
 
 def write_figures(report: dict[str, Any], fig_dir: Path) -> list[str]:
+    """False-alarm and power-curve figures for ``docs/methods/``; [] without matplotlib."""
     try:
         import matplotlib
 
@@ -308,6 +318,7 @@ def write_figures(report: dict[str, Any], fig_dir: Path) -> list[str]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """CLI of ``make calibrate``: run, write JSON/Markdown/figures, exit 1 if not passed."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--runs", type=int, default=10_000, help="method runs per null scenario (13.1)")
     ap.add_argument("--verdict-runs", type=int, default=1000)

@@ -35,6 +35,9 @@ def _basis(x: FloatArray, lo: float, hi: float, n_seg: int) -> tuple[FloatArray,
 
 
 def fit_spline(years: IntArray, annual: FloatArray) -> NonlinearResult | None:
+    """P-spline (Eilers & Marx, 1996) on annual means: cubic B-splines, 2nd-difference penalty,
+    lambda by GCV, Bayesian bands; shape from AIC vs the line and the derivative change.
+    """
     ok = np.isfinite(annual)
     n = int(ok.sum())
     if n < MIN_YEARS:

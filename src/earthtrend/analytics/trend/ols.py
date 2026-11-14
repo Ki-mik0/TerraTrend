@@ -13,6 +13,11 @@ from earthtrend.analytics.preprocess.aggregate import FloatArray
 
 @dataclass(frozen=True)
 class OlsFit:
+    """OLS trend fit with AR(1)-corrected inference.
+
+    n_eff = n (1 - r1) / (1 + r1); SE = sqrt(SSE / (n_eff - 2) / Sxx); Santer et al. (2000).
+    """
+
     slope: float  # units per year
     intercept: float
     se: float

@@ -31,6 +31,7 @@ class Ruleset(BaseModel):
 
 @lru_cache(maxsize=4)
 def load_ruleset(name: str = "verdict_rules_v1") -> Ruleset:
+    """Load ``rulesets/<name>.yaml`` (cached); the file must declare the same ruleset name."""
     path = RULES_DIR / f"{name}.yaml"
     data: dict[str, Any] = yaml.safe_load(path.read_text(encoding="utf-8"))
     rs = Ruleset.model_validate(data)

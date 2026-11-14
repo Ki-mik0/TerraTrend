@@ -14,6 +14,11 @@ from earthtrend.analytics.trend.ols import lag1_autocorrelation
 
 
 def block_length(n: int, r1: float) -> int:
+    """Block length for the moving-block bootstrap.
+
+    Formula: L = max(3, round(n^(1/3) * (1 + r1) / (1 - r1))), with r1 clipped to [0, 0.95]
+    (lag-1 residual autocorrelation), so stronger persistence gives longer blocks.
+    """
     r1 = min(max(r1, 0.0), 0.95)
     return max(3, round(n ** (1 / 3) * (1 + r1) / (1 - r1)))
 
@@ -21,6 +26,13 @@ def block_length(n: int, r1: float) -> int:
 def block_bootstrap(
     t: FloatArray, y: FloatArray, n_boot: int = 2000, seed: int = 42, alpha: float = 0.05
 ) -> BootstrapResult | None:
+    """Percentile CI of the OLS slope from a moving-block bootstrap of residuals.
+
+    Fit y = a + b t; resample residuals e in blocks of length L (see ``block_length``);
+    y* = fit + e*; b* = sum((t - t_mean) * (y* - y*_mean)) / sum((t - t_mean)^2).
+    CI = [q_(alpha/2), q_(1-alpha/2)] of b* over ``n_boot`` replicates, reported per decade.
+    Returns None for fewer than 10 valid points.
+    """
     ok = np.isfinite(t) & np.isfinite(y)
     tv, yv = t[ok], y[ok]
     n = tv.size

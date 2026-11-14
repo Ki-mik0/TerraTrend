@@ -18,6 +18,7 @@ from earthtrend.analytics.trend import jackknife, mann_kendall, nonlinear
 
 
 def thresholds() -> dict[str, Any]:
+    """Every config threshold that changes numerical behaviour (input of the fingerprint)."""
     return {
         "config": {
             k: getattr(config, k)
@@ -55,6 +56,9 @@ def thresholds() -> dict[str, Any]:
 
 
 def calibration_fingerprint(ruleset: str = "verdict_rules_v1") -> str:
+    """sha256 (16 hex) of the ruleset YAML and the thresholds; the calibration gate test
+    fails when it differs from the last calibration report.
+    """
     h = hashlib.sha256()
     h.update((RULES_DIR / f"{ruleset}.yaml").read_bytes().replace(b"\r\n", b"\n"))
     h.update(json.dumps(thresholds(), sort_keys=True).encode())

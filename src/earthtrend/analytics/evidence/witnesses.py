@@ -108,6 +108,9 @@ def compare_witnesses(
 
 
 def witnesses_status(res: WitnessesResult | None) -> ItemStatus:
+    """Section 6.2: na with < 2 datasets; fail if slopes differ in sign; pass if all are
+    significant and no difference series has a significant trend; else partial.
+    """
     if res is None or len(res.datasets) < 2:
         return "na"
     signs = {np.sign(d.slope_per_decade) for d in res.datasets if d.slope_per_decade}

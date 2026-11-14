@@ -224,6 +224,9 @@ def cell_trends(
     z_crit: float,
     tie_resolution: float,
 ) -> np.ndarray:
+    """numba kernel, parallel over cells (section 8.1): OLS + AR(1) n_eff on monthly
+    anomalies, MK-AR1 and Sen (Gilbert CI) on annual means; one output row per cell.
+    """
     nc = y.shape[0]
     out = np.empty((nc, N_OUT))
     for c in prange(nc):

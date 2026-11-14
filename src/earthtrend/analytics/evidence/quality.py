@@ -77,12 +77,16 @@ def artifact_flags(
 def sensor_events_in_period(
     events: list[SensorEvent], period: tuple[date, date] | None
 ) -> list[SensorEvent]:
+    """Sensor events (launches, degradations, version changes) inside ``period`` (inclusive)."""
     if period is None:
         return []
     return [e for e in events if period[0] <= e.date <= period[1]]
 
 
 def quality_status(flags: list[QualityFlag]) -> ItemStatus:
+    """Section 6.5: fail on any FAIL_FLAGS code, pass with no warnings, partial with 1-2
+    warning codes, fail with more.
+    """
     codes = {f.code for f in flags}
     if codes & FAIL_FLAGS:
         return "fail"

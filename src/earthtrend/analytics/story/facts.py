@@ -68,6 +68,7 @@ def concept_trend(tr: TrendResult, protocol: EvidenceProtocol | None = None) -> 
 
 
 def concept_trend_from_related(rv: RelatedVariable) -> ConceptTrend:
+    """Related variable -> ``ConceptTrend`` input of the pattern library (section 10.3)."""
     return ConceptTrend(
         concept_id=rv.concept_id,
         season=rv.season,
@@ -209,6 +210,9 @@ def build_story_facts(
     patterns: Sequence[PatternMatch] = (),
     graph_version: str | None = None,
 ) -> StoryFacts:
+    """Every number and code a story text may use (section 10.4): main trend, protocol items,
+    witnesses, alibi, related variables, patterns, AI opinion and merged caveats.
+    """
     caveats: list[str] = []
     for c in [*(protocol.caveats if protocol else []), *tr.verdict.caveats]:
         if c not in caveats:

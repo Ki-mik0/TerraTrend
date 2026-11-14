@@ -46,6 +46,7 @@ AiDetective = Callable[[Sequence[RegionalSeries], AnalysisOptions], Sequence[AiO
 
 
 def radar_key(variable_id: str, region_id: str, season: str) -> str:
+    """Stable key of one Radar series: ``variable|region|season``."""
     return f"{variable_id}|{region_id}|{season}"
 
 

@@ -20,6 +20,9 @@ MISSING = {"", "NaN", "nan", "-9999", "-9999.0"}
 
 
 def load_giovanni_csv(path: Path) -> tuple[list[date], list[float | None]]:
+    """Read a Giovanni area-averaged time-series CSV: (first-of-month dates, values); header
+    lines are skipped and fill values become None.
+    """
     dates: list[date] = []
     values: list[float | None] = []
     with path.open(newline="", encoding="utf-8") as fh:
@@ -64,6 +67,9 @@ class Agreement:
 def compare(
     ours: tuple[list[date], list[float | None]], giovanni: tuple[list[date], list[float | None]]
 ) -> Agreement:
+    """Agreement of two monthly series on common dates (section 13.4): Pearson r, absolute
+    differences and their share of the range.
+    """
     a = {d: v for d, v in zip(*ours, strict=True) if v is not None}
     b = {d: v for d, v in zip(*giovanni, strict=True) if v is not None}
     common = sorted(a.keys() & b.keys())

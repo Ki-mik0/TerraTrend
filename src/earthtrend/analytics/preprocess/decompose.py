@@ -14,6 +14,10 @@ from earthtrend.analytics.preprocess.aggregate import FloatArray
 
 
 def stl_decompose(dates: list[date], values: FloatArray, period: int = 12) -> StlResult | None:
+    """Robust STL (Cleveland et al., 1990; period 12) of the monthly series, for charts only
+    (section 4.3). Gaps are linearly interpolated for the fit and returned as None; None
+    with fewer than 2 * period + 1 valid months.
+    """
     from statsmodels.tsa.seasonal import STL
 
     ok = np.isfinite(values)
