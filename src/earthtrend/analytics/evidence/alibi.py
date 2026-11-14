@@ -178,6 +178,9 @@ def alibi(
 
 
 def alibi_status(res: AlibiResult | None, alpha: float = config.ALPHA) -> ItemStatus:
+    """Section 6.4: pass - the index-adjusted slope keeps its sign and p_adjusted < alpha;
+    partial - same sign but not significant; fail - the sign flips or vanishes; na - no alibi.
+    """
     if res is None:
         return "na"
     same = np.sign(res.b_adjusted_per_decade) == np.sign(res.b_raw_per_decade) != 0
@@ -189,6 +192,9 @@ def alibi_status(res: AlibiResult | None, alpha: float = config.ALPHA) -> ItemSt
 
 
 def alibi_caveats(res: AlibiResult | None, status: ItemStatus) -> list[str]:
+    """Caveats from the alibi (section 6.8): ``index_trend_overlap`` when |corr(index, time)|
+    > OVERLAP_R, ``explained_by_enso`` when the trend fails after removing Nino 3.4.
+    """
     if res is None:
         return []
     out = []

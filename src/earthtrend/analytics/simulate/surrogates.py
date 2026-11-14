@@ -143,6 +143,9 @@ def deseasonalize(x: np.ndarray, period: int = 12) -> tuple[np.ndarray, np.ndarr
 def skewed_ar1(
     n: int, phi: float, rng: np.random.Generator, shape: float = 2.0, scale: float = 1.0
 ) -> np.ndarray:
+    """Gamma-distributed series with AR(1) dependence: a unit-variance Gaussian AR(1) mapped
+    through Phi, then through the gamma quantile function (copula transform).
+    """
     g = ar1_noise(n, phi, np.sqrt(1 - phi**2), rng)  # unit-variance Gaussian AR(1)
     u = stats.norm.cdf(g)
     return stats.gamma.ppf(u, a=shape, scale=scale)
@@ -161,11 +164,13 @@ def with_witness(
 
 
 def insert_trend(x: np.ndarray, slope_per_decade: float, step_years: float = 1 / 12) -> np.ndarray:
+    """Add a linear trend of ``slope_per_decade`` to ``x`` (``step_years`` per sample)."""
     t = np.arange(x.size) * step_years
     return x + slope_per_decade / 10.0 * t
 
 
 def insert_step(x: np.ndarray, at: int, size: float) -> np.ndarray:
+    """Add a level shift of ``size`` from index ``at`` on (sensor-artifact scenario)."""
     out = x.copy()
     out[at:] += size
     return out

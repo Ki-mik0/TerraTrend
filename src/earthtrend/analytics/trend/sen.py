@@ -17,6 +17,8 @@ from earthtrend.analytics.preprocess.aggregate import FloatArray
 
 @dataclass(frozen=True)
 class SenResult:
+    """Sen slope (units per year), intercept median(y - slope t), 95% CI, n (Sen 1968)."""
+
     slope: float  # units per year
     intercept: float
     ci95: tuple[float, float]
@@ -29,6 +31,13 @@ def _z(alpha: float) -> float:
 
 
 def sen_slope(t: FloatArray, y: FloatArray, var_s: float, alpha: float = 0.05) -> SenResult | None:
+    """Theil-Sen slope with a rank-based confidence interval.
+
+    slope = median((y_j - y_i) / (t_j - t_i)) over pairs i < j (Sen 1968).
+    CI (Gilbert 1987): C = z_(1-alpha/2) * sqrt(Var(S)); bounds are the (N - C)/2-th and
+    (N + C)/2 + 1-th sorted pairwise slopes (interpolated), N = number of pairs.
+    ``var_s`` is the (autocorrelation-corrected) variance of the MK statistic S.
+    """
     ok = np.isfinite(y) & np.isfinite(t)
     tv, yv = t[ok], y[ok]
     n = tv.size

@@ -91,6 +91,9 @@ class SeriesMatrix:
 
 
 def series_matrix(series: Sequence[RegionalSeries], rows: list[int]) -> SeriesMatrix:
+    """Stack series sharing one monthly calendar into a (series, months) matrix in analysis
+    units (log transform applied where the passport asks for it).
+    """
     years, months = split_dates(series[rows[0]].dates)
     raw = np.array(
         [[np.nan if v is None else v for v in series[r].values] for r in rows], dtype=np.float64
@@ -120,6 +123,9 @@ def yearly_block_from(
     period: tuple[int, int] | None = None,
     baseline: tuple[int, int] | None = None,
 ) -> YearlyBlock:
+    """Annual (or seasonal) anomaly block (series, years) for Radar stage 1, with the same
+    period, DJF and baseline rules as ``prepare_series``.
+    """
     years, months, vals = mat.years, mat.months, mat.values
     if period is not None:
         sel = (years >= period[0]) & (years <= period[1])

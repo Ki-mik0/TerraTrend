@@ -51,6 +51,9 @@ class Detrended:
 
 
 def light_options(opts: AnalysisOptions, period: tuple[int, int] | None) -> AnalysisOptions:
+    """Cheap analysis options for related variables: no spline, monthly breakdown, BEAST,
+    bootstrap or expert extras; only ``period`` is changed.
+    """
     return opts.model_copy(
         update={
             "period": period,
@@ -64,6 +67,9 @@ def light_options(opts: AnalysisOptions, period: tuple[int, int] | None) -> Anal
 
 
 def detrended_anomalies(series: RegionalSeries, opts: AnalysisOptions) -> Detrended:
+    """Monthly anomalies minus their OLS line, keyed by month index, plus the lag-1
+    autocorrelation; detrending is required before correlating two series (section 10.2).
+    """
     p = prepare_series(to_monthly(series), opts)
     ok = np.isfinite(p.anom)
     resid: FloatArray = np.full(p.anom.shape, np.nan)

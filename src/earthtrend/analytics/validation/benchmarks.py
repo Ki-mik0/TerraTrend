@@ -180,6 +180,9 @@ REAL: list[RealReference] = [
 
 
 def run_real(ref: RealReference, fixtures: Path) -> EvidenceProtocol | None:
+    """Protocol for a real reference case from its Giovanni CSV fixture; None if the fixture
+    is missing (section 13.2).
+    """
     path = fixtures / ref.fixture
     if not path.exists():
         return None

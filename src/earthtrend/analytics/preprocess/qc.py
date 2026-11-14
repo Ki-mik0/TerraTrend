@@ -10,10 +10,12 @@ from earthtrend.analytics.preprocess.aggregate import FloatArray
 
 
 def gap_share(values: FloatArray) -> float:
+    """Share of missing (non-finite) values; 1.0 for an empty series."""
     return float(np.mean(~np.isfinite(values))) if values.size else 1.0
 
 
 def is_constant(values: FloatArray) -> bool:
+    """True when the series has no finite values or max == min."""
     v = values[np.isfinite(values)]
     return v.size == 0 or bool(np.nanmax(v) == np.nanmin(v))
 
@@ -25,6 +27,10 @@ def qc_flags(
     years_of_data: float,
     min_years: int,
 ) -> list[QualityFlag]:
+    """Quality flags of section 4.2: many_gaps (> MAX_GAP_SHARE), low_stable_coverage
+    (< LOW_STABLE_FRACTION), short_record (< min_years), constant_series, outliers
+    (|z| > OUTLIER_Z, values kept).
+    """
     flags: list[QualityFlag] = []
     share = gap_share(values)
     if share > config.MAX_GAP_SHARE:

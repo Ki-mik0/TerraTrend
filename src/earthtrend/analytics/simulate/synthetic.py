@@ -49,6 +49,9 @@ def generate_monthly(
     step_index: int | None = None,
     seed: int = 0,
 ) -> tuple[list[date], np.ndarray, SyntheticTruth]:
+    """Monthly series = base + seasonal sine + linear trend + optional step + AR(1) noise,
+    with optional random gaps; returns (dates, values, truth). Seeded (section 12).
+    """
     rng = np.random.default_rng(seed)
     n = n_years * 12
     dates = [date(start_year + i // 12, i % 12 + 1, 1) for i in range(n)]
@@ -70,6 +73,7 @@ def generate_monthly(
 
 
 def default_meta(**overrides: object) -> SeriesMeta:
+    """``SeriesMeta`` with placeholder ids for synthetic data; ``overrides`` replace fields."""
     data: dict[str, object] = {
         "variable_id": "synthetic",
         "concept_id": "synthetic",

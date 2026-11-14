@@ -156,6 +156,10 @@ def build_protocol(
     zones: list[Zone] | None = None,
     ruleset: str = "verdict_rules_v1",
 ) -> EvidenceProtocol:
+    """Full evidence protocol (section 6): statistics, magnitude, witnesses (difference
+    series), robustness (triangle + jackknife), alibi (indices with block cross-validation),
+    quality and the advisory ``ai_expert``; verdict and strength from the YAML ruleset (6.8).
+    """
     opts = options or AnalysisOptions()
     rules = load_ruleset(ruleset)
     tr = analyze_series(series, opts)

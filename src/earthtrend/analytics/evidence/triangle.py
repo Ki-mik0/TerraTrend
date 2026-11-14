@@ -24,6 +24,11 @@ def _min_window(n_years: int) -> int:
 def trend_triangle(
     years: IntArray, annual: FloatArray, reference_sign: int
 ) -> TriangleResult | None:
+    """Trend triangle (section 6.3): Mann-Kendall S for every (start, end) window of at least
+    the minimum length on annual means, from 2-D prefix sums of the sign matrix (O(n^2)).
+
+    Var(S) = n(n-1)(2n+5)/18 per window (no autocorrelation correction on annual data).
+    """
     n = annual.size
     w_min = _min_window(n)
     if n < w_min or reference_sign == 0:
@@ -75,6 +80,9 @@ def trend_triangle(
 
 
 def triangle_status(tri: TriangleResult | None) -> ItemStatus:
+    """Section 6.3: pass when the share of same-sign windows >= PASS_SAME and of significant
+    same-sign windows >= PASS_SIG; partial when same-sign share >= PARTIAL_SAME; else fail.
+    """
     if tri is None:
         return "na"
     if tri.same_sign_share >= PASS_SAME and tri.sig_same_sign_share >= PASS_SIG:

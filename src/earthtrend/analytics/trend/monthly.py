@@ -14,6 +14,11 @@ from earthtrend.analytics.trend.sen import sen_slope
 def monthly_trends(
     values: FloatArray, years: IntArray, months: IntArray, alpha: float = 0.05
 ) -> list[MonthTrend]:
+    """Trend of each calendar month: 12 annual series, Sen slope + MK test, BH-FDR over 12.
+
+    Slope per decade = 10 * median((y_j - y_i) / (t_j - t_i)) (Sen 1968); significance from
+    q-values of the Benjamini & Hochberg (1995) procedure over the 12 monthly p-values.
+    """
     rows: list[tuple[int, float | None, tuple[float, float] | None, float | None, int]] = []
     for m in range(1, 13):
         sel = (months == m) & np.isfinite(values)

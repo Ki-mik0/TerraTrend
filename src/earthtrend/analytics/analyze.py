@@ -76,6 +76,11 @@ def _to_list(x: FloatArray) -> list[float | None]:
 
 
 def prepare_series(series: RegionalSeries, opts: AnalysisOptions) -> PreparedSeries:
+    """Transform (log), period and season selection, climatology and anomalies (section 4.3).
+
+    Annual season: monthly anomalies x - clim_mean[month] (baseline = ``opts.baseline`` or the
+    whole period). Other seasons: seasonal means, anomalies against their baseline mean.
+    """
     years, months = split_dates(series.dates)
     raw = np.array([np.nan if v is None else v for v in series.values], dtype=np.float64)
 
@@ -205,6 +210,12 @@ def _facts(
 
 
 def analyze_series(series: RegionalSeries, options: AnalysisOptions | None = None) -> TrendResult:
+    """One regional series -> ``TrendResult`` (sections 4-5, Stage 4 decision rule).
+
+    OLS + AR(1) n_eff (also on annual means), Mann-Kendall with the AR(1) rank correction,
+    Sen's slope with the Gilbert (1987) CI, SNR, Weatherhead (1998) years to detect, QC flags
+    and the verdict; plus the optional depth items of stage A4.
+    """
     opts = options or AnalysisOptions()
     series = to_monthly(series)
     meta = series.meta

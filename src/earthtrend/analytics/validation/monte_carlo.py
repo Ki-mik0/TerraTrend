@@ -72,6 +72,9 @@ def synthetic_template(n: int, seed: int = 2024) -> np.ndarray:
 
 
 def make_case(sc: Scenario, seed: int) -> tuple[RegionalSeries, list[RegionalSeries]]:
+    """One null case of a scenario (seeded): the main series and, for the witness scenario,
+    its witness with shared weather.
+    """
     rng = np.random.default_rng(seed)
     n = sc.n_years * 12
     witnesses: list[RegionalSeries] = []
@@ -180,6 +183,7 @@ def method_rates(
 
 
 def verdict_rates(sc: Scenario, runs: int, seed0: int = 0, workers: int = 1) -> dict[str, float]:
+    """Share of each verdict over ``runs`` null cases of the scenario (parallel workers)."""
     res = _parallel(_verdict_run, [(sc, seed0 + i) for i in range(runs)], workers)
     counts = Counter(res)
     return {
