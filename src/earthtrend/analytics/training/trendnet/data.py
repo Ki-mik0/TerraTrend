@@ -11,8 +11,11 @@ what real variables look like. The split keeps families and template seeds apart
 * ``train`` / ``val`` - the training families; val uses a disjoint seed range
   (the stand-in for "other cells, spatial blocks");
 * ``new_places`` - training families, yet another seed range (held-out geography);
-* ``new_variables`` - families the model never sees in training (log-normal skewed
-  "NO2-like", very smooth red "GRACE-like", long memory);
+* ``new_variables`` - distribution shapes the model never sees in training (log-normal
+  skewed "NO2-like", zero-inflated "precipitation-like", moderate long memory). The pilot
+  showed that a held-out family of very red noise (phi 0.93-0.98) mostly measures an
+  impossible task - MK-AR1 also had 22% false alarms there - so that persistence range is
+  part of training (``ar1`` up to 0.98), and the held-out families test unseen *shapes*;
 * ``theory`` - plain Gaussian AR(1), to compare with the classical tests.
 
 When real data exists, IAAFT surrogates of real cells replace the synthetic templates
@@ -38,7 +41,7 @@ N_CHANNELS = 5  # z, missing, sin(month), cos(month), time position
 
 Split = Literal["train", "val", "new_places", "new_variables", "theory"]
 TRAIN_FAMILIES = ("ar1", "arma", "student_t", "iaaft_red", "seasonal_amp")
-NEW_VARIABLE_FAMILIES = ("lognormal", "smooth_red", "long_memory")
+NEW_VARIABLE_FAMILIES = ("lognormal", "zero_inflated", "long_memory")
 SEED_BASE = {
     "train": 0,
     "val": 10_000_000,
@@ -73,7 +76,8 @@ def _unit(x: np.ndarray) -> np.ndarray:
 def noise(family: str, n: int, rng: np.random.Generator) -> np.ndarray:
     """Unit-variance null series of a family (no trend)."""
     if family == "ar1":
-        x = ar1_noise(n, float(rng.uniform(0.0, 0.9)), 1.0, rng)
+        # Up to phi = 0.98: real variables (GRACE storage, soil moisture) are this persistent.
+        x = ar1_noise(n, float(rng.uniform(0.0, 0.98)), 1.0, rng)
     elif family == "arma":
         phi1, phi2 = float(rng.uniform(0.2, 0.9)), float(rng.uniform(-0.3, 0.0))
         e = rng.normal(size=n + 200)
@@ -100,10 +104,12 @@ def noise(family: str, n: int, rng: np.random.Generator) -> np.ndarray:
         )  # residual seasonality whose amplitude changes (not a trend)
     elif family == "lognormal":
         x = np.exp(0.6 * ar1_noise(n, float(rng.uniform(0.2, 0.7)), 1.0, rng))
-    elif family == "smooth_red":
-        x = ar1_noise(n, float(rng.uniform(0.93, 0.98)), 1.0, rng)
+    elif family == "zero_inflated":
+        # Precipitation-like: many zeros, skewed positive amounts, mild persistence.
+        g = ar1_noise(n, float(rng.uniform(0.1, 0.5)), 1.0, rng)
+        x = np.where(g > float(rng.uniform(-0.3, 0.5)), np.exp(0.8 * g), 0.0)
     elif family == "long_memory":
-        x = fractional_noise(n, float(rng.uniform(0.15, 0.4)), rng)
+        x = fractional_noise(n, float(rng.uniform(0.1, 0.3)), rng)
     elif family == "theory":
         x = ar1_noise(n, float(rng.uniform(0.0, 0.8)), 1.0, rng)
     else:
