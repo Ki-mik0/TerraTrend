@@ -1032,8 +1032,9 @@ def inject_signal(series, kind: Literal["none","linear","step","accel","trend_pl
 - Вирок — код `verdict_rules_v1` (`proven`, `strong`, `likely`, `suspicious`, `no_evidence`, `inadmissible`), `strength`, `ruleset`, `caveats`. Бекенд його не перераховує.
 - Протокол із семи пунктів, включно з дорадчим `ai_expert`. У `details` їдуть свідки, трикутник, алібі, jackknife, `changepoints`, `stable_fraction`, розкол і зони.
 - `GET /api/v1/regions/{id}/potential` віддає `TrendPotential`. Після справи бекенд пише `potential_feedback`. Розбіжності `ai_disagrees` лягають у `ai_reviews`.
-- Сітка — `GridTrendProduct`. PNG продуктів `trend` і `ai_class` малює бекенд. Стрічка радару `ai_flagged` іде поруч із `almost`.
-- Пошук `GET /api/v1/variables?q=` кличе M3, коли модель активна.
+- Сітка — `GridTrendProduct`. PNG продуктів `trend` і `ai_class` малює бекенд. Кадр анімації — той самий тайл із роком. Стрічка радару `ai_flagged` іде поруч із `almost`. Типологію клітинок бекенд віддає як `GET /api/v1/radar/typology`.
+- Вертикальний профіль і контраст міста з кільцем бекенд віддає як `GET /api/v1/cases/{id}/profile` і `GET /api/v1/cases/{id}/urban`. Порівняння двох–чотирьох регіонів — `POST /api/v1/cases/compare` зі вже порахованих справ.
+- Пошук `GET /api/v1/variables?q=` кличе M3, коли модель активна. Пошук NASA CMR на вимогу — `POST /api/v1/variables/cmr`.
 - Текст історії: M4, якщо ворота пройдено, інакше шаблон, інакше зовнішня LLM у бекенді. Звірка чисел — у бекенді.
 - Каталог `models/` тримає бекенд. Команди `earthtrend ml` лишаються в цьому пакеті.
 - Ознаки регіону для M2 (земний покрив, висота, населення, клімат) і стабільні маски — попередньо порахований продукт, який бекенд кладе в масиви перед викликом аналітики.

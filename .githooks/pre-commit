@@ -1,0 +1,24 @@
+#!/bin/sh
+# Keep the frontend contract in sync with the API on every commit.
+# Enable once per clone:  git config core.hooksPath .githooks
+set -e
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+
+# Only when backend code, the contract or the generated types are part of this commit.
+git diff --cached --name-only | grep -qE '^(src/earthtrend/api/|contract/|web/src/api/)' || exit 0
+
+if command -v uv >/dev/null 2>&1; then
+  py="uv run --quiet python"
+elif [ -x .venv/Scripts/python.exe ]; then
+  py=.venv/Scripts/python.exe
+elif [ -x .venv/bin/python ]; then
+  py=.venv/bin/python
+else
+  py=python
+fi
+
+$py scripts/contract.py --web
+git add contract/openapi.json
+[ -f web/src/api/schema.d.ts ] && git add web/src/api/schema.d.ts
+exit 0

@@ -25,7 +25,35 @@ flowchart TB
 
 ## Контракт із сусідами
 
-Аналітика віддає моделі `TrendResult`, `EvidenceProtocol`, `GridTrendProduct`, `RadarEntry`, `StoryFacts`, `AiOpinion`, `TrendPotential`. Бекенд їх не перераховує: зберігає, кешує і віддає фронтенду під `/api/v1`. Фронтенд малює ці поля і перекладає коди вироку, застережень і патернів. Текст історії й асистента збирає бекенд із `StoryFacts`.
+Аналітика віддає моделі `TrendResult`, `EvidenceProtocol`, `GridTrendProduct`, `RadarEntry`, `StoryFacts`, `AiOpinion`, `TrendPotential`, `VerticalProfile`, `UrbanContrast`, `TypologyMap`. Бекенд їх не перераховує: зберігає, кешує і віддає фронтенду під `/api/v1`. Фронтенд малює ці поля і перекладає коди вироку, застережень і патернів. Текст історії й асистента збирає бекенд із `StoryFacts`. Порівняння регіонів бекенд збирає з уже порахованих справ, не з нової формули.
+
+## Функціональна ціль
+
+Ціль продукту — розділи 3–6 і 9 документа `docs/BEST_IMPLEMENTATION.md`. Стек цього плану лишається Litestar, чотири шари і префікс `/api/v1`. Наука лишається в пакеті аналітики.
+
+| Пункт BEST | Де живе |
+|---|---|
+| Вибір змінної, теми, паспорт, семантичний пошук | `ListVariables`, `GetVariable` |
+| Розширений каталог NASA CMR на вимогу | `SearchCmr`. Готовий паспорт віддається одразу. Завантаження і аналіз ідуть важкою задачею |
+| Регіони AR6, країни, області, басейни, біоми, міста з кільцем, океан, висотні пояси | `ListRegions`, `GetRegion` |
+| Полігон, GeoJSON, точка і радіус | `RegisterCustomRegion`. Маску і площу рахує аналітика |
+| Ряд, аномалії, STL, GAM, 12 місяців, сезони, точки зламу | `GetCase` віддає `SeriesArtifact` |
+| Карта тренду і кадр анімації за роком | `GetTile`. Палітра і штрихування значущості малює фронтенд |
+| Вирок і шість доказів плюс дорадчий `ai_expert` | `GetEvidence` |
+| Свідки, трикутник, алібі, якість, роки до доказу, розкол | пункти протоколу і поля ряду. Бекенд числа не рахує |
+| Вертикальний профіль, місто проти околиць | `GetProfile`, `GetUrbanContrast` |
+| Порівняння 2–4 регіонів | `CompareCases` |
+| Стрічки радару і типологія схожих змін | `GetRadarFeed`, `GetRadarTypology`. Оновлення після нових місяців — новий продукт аналітики |
+| Граф процесів, лаги, патерни, алібі, свідки, статті | `BuildStory`. Числа лише з фактів |
+| План розслідування і відповідь з id справи | `AskAssistant`, `StreamAssistant` |
+| Навчальний режим без готового вироку | `mode=teach` у тих самих маршрутах асистента |
+| Демо з кроками, словник, завдання, вікторини, лабораторія, бейджі | зона `education`. Симулятор кличе аналітику |
+| Журнал справ, нотатки, гіпотези | зона `journal` |
+| CSV, GeoJSON, notebook, HTML, PNG, PDF, ZIP, NetCDF, SVG, цитування з DOI | `CreateExport` |
+| Повний стан справи в посиланні | id справи вже несе специфікацію, період, методи і версії |
+| Текст графіка для читача екрана | поле `alt_text` у справі, зібране з фактів |
+| Режим «Просто» і «Експерт», палітри, телефон | фронтенд. Бекенд завжди віддає повний протокол |
+| Сім демо-справ розділу 9 | `DemoScenario` у каталозі |
 
 ## 1. Роль
 
@@ -35,12 +63,12 @@ flowchart TB
 - дає кожній справі стабільний ID, специфікацію, версії даних і результат, щоб аналіз відкривався знову і шарився посиланням;
 - на швидкий аналіз відповідає в тому самому запиті, на важкий ставить job і віддає прогрес через SSE та polling;
 - кешує каталог, регіони, радар, готові справи, протоколи доказів, історії, тайли, дозволені відповіді асистента і метадані експорту;
-- веде журнал, демо-справи, словник, завдання, відповіді учнів і бейджі;
+- веде журнал з нотатками і гіпотезами, демо-справи з кроками, словник, завдання, відповіді учнів, вікторини, лабораторію і бейджі;
 - збирає текст асистента і Story Lens із `StoryFacts`: спершу M4, якщо модель пройшла ворота, інакше шаблон, інакше Anthropic;
 - читає куб і живий шлях NASA POWER / earthaccess, готує масиви і передає їх в аналітику;
 - малює PNG-тайли з `GridTrendProduct` і пише файли експорту з таблиць результату.
 
-Аналітиці належать: контроль якості, стабільна маска, десезоналізація, OLS з `n_eff`, Mann-Kendall, сезонний MK, Sen's slope, bootstrap CI, jackknife, роки до значущості, точки зламу, FDR, тренди по сітці, зони, зважування за площею `cos φ`, вирок `verdict_rules_v1`, факти історії, інференс M1–M3 і необов’язковий M4. Навчання моделей — CLI `earthtrend ml` у пакеті аналітики. Завантаження NASA, регрид, Zarr, HTTP, кеш, PNG і файли експорту аналітика не робить.
+Аналітиці належать: контроль якості, стабільна маска, десезоналізація, STL, GAM, OLS з `n_eff`, Mann-Kendall, сезонний MK, Sen's slope, bootstrap CI, jackknife, роки до значущості, точки зламу, свідки, трикутник, алібі, FDR, тренди по сітці, зони, типологія, вертикальний профіль, місто проти околиць, зважування за площею `cos φ`, вирок `verdict_rules_v1`, факти історії разом із графом і патернами, інференс M1–M3 і необов’язковий M4. Навчання моделей — CLI `earthtrend ml` у пакеті аналітики. Завантаження NASA, регрид, Zarr, HTTP, кеш, PNG і файли експорту аналітика не робить.
 
 ## 2. Домен
 
@@ -48,24 +76,31 @@ flowchart TB
 
 | Сутність | Що тримає |
 |---|---|
-| `VariablePassport` | id, назви EN/UA, `kid_description`, джерело, провайдер, одиниці, нативна і кубова роздільність, покриття, домен, теми, придатні типи регіонів, пов’язані id, очікуваний знак, `min_years_for_trend`, застереження, DOI або URL |
-| `Region` | id, назва, тип, геометрія, bbox, площа, статус реєстрації |
+| `VariablePassport` | id, рівень `curated` або `cmr`, назви EN/UA, `kid_description`, джерело, провайдер, одиниці, нативна і кубова роздільність, покриття, домен, теми, придатні типи регіонів, пов’язані id, свідки, очікуваний знак, `min_years_for_trend`, застереження, DOI або URL |
+| `ProcessLink` | ребро графа: від якої змінної до якої, і в який бік вплив. Лежить у каталозі, не окремий корінь |
+| `SensorEvent` | запуск, деградація або зміна версії приладу. Лежить у каталозі і годує пункт якості |
+| `Region` | id, назва, тип, геометрія, bbox, кільце околиць для міста, площа, статус реєстрації |
 | `Case` | id, власник, специфікація, статус, вирок, версії, хеш результату, посилання на артефакти |
 | `CaseSpec` | змінна, регіон, період, сезон, частота, мова, опції, версії даних |
 | `Verdict` | код `verdict_rules_v1`, `strength` 0–100, `ruleset`, заголовок, короткий текст, напрям, `caveats` |
 | `EvidenceProtocol` | сім пунктів і вирок |
 | `AiOpinion` | версія M1, клас зміни, ймовірності, нахил і інтервал, впевненість, згода зі статистикою |
 | `TrendPotential` | змінна, сезон, ймовірність значущості, очікуваний знак і SNR, коди причин, версія M2 |
-| `SeriesArtifact` | сирий ряд, аномалії, лінія тренду, 95% CI, аномальні роки, зведення карти |
+| `SeriesArtifact` | сирий ряд, аномалії, STL, лінія тренду, GAM і позначка прискорення, 95% CI, 12 місяців, сезони, аномальні роки, точки зламу, `alt_text` |
+| `VerticalProfile` | тренд на рівнях тиску. Читання справи, не новий корінь |
+| `UrbanContrast` | тренд міста, тренд кільця і їхня різниця. Читання справи, не новий корінь |
 | `RadarItem` | стрічка, змінна, регіон, нахили, SNR, p, q FDR, розкол, оцінка, рівень вироку, URL справи |
-| `Story` | заголовок, текст, співучасники, застереження, версії |
-| `StoryFacts` | факти з аналітики до будь-якого тексту |
+| `TypologyCluster` | назва патерну знаків і геометрія схожих клітинок. Читання радару, не новий корінь |
+| `Story` | заголовок, текст, співучасники, статті, застереження, версії |
+| `StoryFacts` | факти з аналітики до будь-якого тексту: тренд, граф, лаги, часткові кореляції, патерни, алібі, свідки |
 | `Job` | id, справа, вид, статус, прогрес, етап, повідомлення, помилка |
-| `Note` | автор, справа, текст |
+| `Note` | автор, справа, вид `note` або `hypothesis`, текст |
 | `Assignment` | вчитель, справи, текст, посилання для класу |
 | `Submission` | учень, завдання, справа, відповідь |
+| `Quiz` | питання, варіанти, правильна відповідь, код бейджа. Корінь освіти поруч із завданням |
+| `LabRun` | параметри симулятора і порахований ряд. Тимчасове читання, не збережений агрегат |
 | `Badge` | користувач, код, причина |
-| `ExportRecord` | справа, формат, статус, шлях до файлу |
+| `ExportRecord` | справа, формат, статус, шлях до файлу, текст цитування |
 | `User` | id, роль, облікові дані |
 
 Доменні правила:
@@ -94,7 +129,7 @@ flowchart TB
 
 Панель довіри: джерело і версія колекції, період, число місяців і `n_eff`, частка пропусків, `stable_fraction`, метод, тести, 95% CI, `ruleset`, версії моделей.
 
-`SeriesArtifact` містить сирий ряд і аномалії, лінію тренду, 95% CI, `JackknifeResult`, Sen's slope, нахил за десятиліття, OLS з `n_eff`, Mann-Kendall, сезонний MK, SNR, роки до значущості, `changepoints`, `split_flag`, частки площі, зони, `ai_opinion`. У режимі `expert` додаються таблиця тестів, STL і bootstrap CI. Сітка лежить у `GridTrendProduct` (`slope`, `sig_fdr`, `ai_class`, `ai_step_prob`); PNG з неї збирає шар тайлів.
+`SeriesArtifact` містить сирий ряд і аномалії, STL, лінію тренду, GAM із позначкою прискорення, 95% CI, стовпчики дванадцяти місяців і сезонів DJF/MAM/JJA/SON, `JackknifeResult`, Sen's slope, нахил за десятиліття, OLS з `n_eff`, Mann-Kendall, сезонний MK, SNR, роки до значущості, `changepoints`, `split_flag`, частки площі, зони, `ai_opinion` і `alt_text`. У режимі `expert` додаються таблиця тестів і bootstrap CI. Сітка лежить у `GridTrendProduct` (`slope`, `sig_fdr`, `ai_class`, `ai_step_prob`); PNG з неї збирає шар тайлів. Кадр анімації — той самий тайл із роком. `VerticalProfile` і `UrbanContrast` аналітика рахує окремо, бекенд лише віддає.
 
 ## 3. Порти
 
@@ -150,20 +185,21 @@ flowchart TB
 
 | Use case | Команда | Порти | Результат |
 |---|---|---|---|
-| `ListVariables` | `q`, `theme`, `domain`, `seasonal`, `has_precomputed`, сторінка | `CatalogPort`, `AnalyticsPort`, `CachePort` | сторінка паспортів; `q` іде в M3, якщо модель активна, інакше в текст каталогу |
-| `GetVariable` | id | `CatalogPort`, `CachePort` | повний паспорт |
+| `ListVariables` | `q`, `theme`, `domain`, `seasonal`, `has_precomputed`, рівень `curated` або `cmr`, сторінка | `CatalogPort`, `AnalyticsPort`, `CachePort` | сторінка паспортів; `q` іде в M3, якщо модель активна, інакше в текст каталогу |
+| `GetVariable` | id | `CatalogPort`, `CachePort` | повний паспорт, свідки і ребра графа |
+| `SearchCmr` | текст запиту, актор | `CatalogPort`, `DataPort`, `JobRepository` | якщо паспорт уже є, одразу id. Інакше важка задача: завантаження на вимогу і аналіз тими самими функціями |
 | `ListRegions` | `q`, `type`, `country`, `bbox`, сторінка | `CatalogPort`, `CachePort` | сторінка регіонів |
 | `GetRegion` | id | `CatalogPort` | один регіон |
 | `GetRegionPotential` | id регіону | `AnalyticsPort`, `CachePort` | підказки M2: змінна, сезон, ймовірність, знак, коди причин |
-| `RegisterCustomRegion` | назва, GeoJSON полігона або прямокутника, актор | `CatalogPort`, `IdGenerator` | id, назва, bbox, площа, статус `registered` |
+| `RegisterCustomRegion` | назва, GeoJSON, прямокутник або точка з радіусом, актор | `CatalogPort`, `IdGenerator` | id, назва, bbox, площа, статус `registered` |
 
-Типи регіонів: `ar6`, `country`, `admin`, `basin`, `biome`, `city`, `demo`, `custom`. У каталозі лежать регіони IPCC AR6, країни і демо-місця: Сахель, Амазонія, Індо-Гангська рівнина, схід США, Арктика, Антарктида, Україна, Каліфорнія. Далі справа посилається на `region_id`. Площу і маску рахує аналітика, коли регіон потрапляє в `CaseSpec`. Стартовий набір змінних — каталог проєкту: MERRA-2, GPM, GLDAS, MODIS, AIRS, OMI.
+Типи регіонів: `ar6`, `country`, `admin`, `basin`, `biome`, `city`, `ocean`, `elevation`, `demo`, `custom`. Місто тримає кільце околиць. У каталозі лежать регіони IPCC AR6, країни, області, басейни, біоми, міста, океанські басейни і демо-місця: Сахель, Амазонія, Індо-Гангська рівнина, схід США, Арктика, Антарктида, Україна, Каліфорнія. Далі справа посилається на `region_id`. Площу, маску з частковим перекриттям і вибір роздільності рахує аналітика, коли регіон потрапляє в `CaseSpec`. Кураторський набір — паспорти з темами, свідками, графом процесів і журналом подій сенсорів. Розширений рівень — пошук NASA CMR. Сім демо-справ з `docs/BEST_IMPLEMENTATION.md` лежать у каталозі як `DemoScenario` з кроками.
 
 ### Створення справи
 
 `CreateCase`. Команда: `variable_id`, `region_id`, період (`start`, `end`), сезон (DJF/MAM/JJA/SON або весь рік), частота, мова, актор і опції.
 
-Опції: `include_evidence`, `include_story`; режим `simple` / `expert`; джерело `auto` / `precomputed` / `live`; сценарій (прибрати рік за jackknife, лише сезон, інший період); `compare_region_id` для двох регіонів поруч. Масиви для `live` і для промаху `auto` читає `DataPort`. В аналітику йде вже зібраний ряд.
+Опції: `include_evidence`, `include_story`; режим `simple` / `expert`; джерело `auto` / `precomputed` / `live`; сценарій (прибрати рік за jackknife, лише сезон, інший період); `compare_region_ids` для двох, трьох або чотирьох регіонів поруч. Масиви для `live` і для промаху `auto` читає `DataPort`. В аналітику йде вже зібраний ряд.
 
 Кроки:
 
@@ -185,14 +221,19 @@ flowchart TB
 | `ListCases` | актор, сторінка | `CaseRepository` | збережені справи користувача; у гостя список порожній |
 | `DeleteCase` | id, актор | `CaseRepository`, `EducationRepository` | домен перевіряє право і зв’язок із завданням |
 | `GetEvidence` | id справи | `CaseRepository`, `AnalyticsPort`, `CachePort` | сім пунктів, `details` графіків і вирок; повторний виклик читає кеш тієї ж версії |
+| `GetProfile` | id справи, актор | `CaseRepository`, `AnalyticsPort`, `CachePort` | `VerticalProfile`: рівні тиску, нахил, інтервал, p і код патерну |
+| `GetUrbanContrast` | id справи, актор | `CaseRepository`, `AnalyticsPort`, `CachePort` | `UrbanContrast`: місто, кільце і різниця |
+| `CompareCases` | від двох до чотирьох id справ або специфікацій, актор | `CaseRepository`, `AnalyticsPort`, `CachePort` | рядки порівняння. Кожен регіон проходить ті самі правила, що `CreateCase` |
 
-`GetEvidence` бере збережену специфікацію і просить аналітику зібрати протокол. Бекенд блоки не перераховує.
+`GetEvidence` бере збережену специфікацію і просить аналітику зібрати протокол. Бекенд блоки не перераховує. Шість пунктів вироку лишаються правилом `verdict_rules_v1`. Пункт `ai_expert` дорадчий.
 
 ### Радар
 
 `GetRadarFeed`. Команда: `feed`, опційно `variable_id` і `region_id`, сторінка. Порти: `AnalyticsPort`, `CachePort`.
 
 Стрічки: `strongest`, `opposite`, `accelerating`, `breakpoints`, `almost`, `stable`, `ai_flagged`.
+
+`GetRadarTypology`. Команда: опційно змінні і сезон. Порти: `AnalyticsPort`, `CachePort`. Результат — список `TypologyCluster`. Оновлення після нових місячних даних робить аналітика новим продуктом. Бекенд стрічку і типологію не перераховує.
 
 Картка: id, змінна, регіон, стрічка, напрям, нахил за десятиліття, відсоток за десятиліття, SNR, p MK, p OLS, q FDR, `split_flag`, оцінка цікавості, рівень вироку, URL справи для переходу в розслідування. Стрічка підписана як список статистичних кандидатів після поправки на множинні порівняння. Джерело — попередньо порахований продукт аналітики. Ключ кешу: стрічка, версія даних, сторінка.
 
@@ -204,22 +245,23 @@ flowchart TB
 
 1. Для id — `CaseRepository` дістає специфікацію. Для голої специфікації — та сама перевірка каталогу, що в `CreateCase`.
 2. `CachePort` шукає текст цієї специфікації, мови і версій. Демо-тексти прогріті заздалегідь і віддаються звідси.
-3. `AnalyticsPort` повертає `StoryFacts`: основний тренд, пов’язані змінні, коди патернів, алібі, свідки, думка ШІ, обов’язкові застереження. Усі числа живуть тут.
+3. `AnalyticsPort` повертає `StoryFacts`: основний тренд, граф процесів, пов’язані змінні, лаги 0–3 місяці, часткові кореляції, коди патернів, алібі, свідки, думка ШІ, добірка статей із посиланнями, обов’язкові застереження. Усі числа живуть тут.
 4. Текст пише `StoryNarrator`: M4, якщо версія пройшла ворота, інакше `TemplateNarrator`, інакше `LlmPort`. Мова — `en` або `uk`.
 5. Доменне правило звіряє числа в тексті з фактами. Зайве число відхиляє текст і лишає шаблон.
-6. `CachePort` зберігає історію. Відповідь: справа, заголовок, текст, співучасники, застереження «кореляція не є причинністю», версії.
+6. `CachePort` зберігає історію. Відповідь: справа, заголовок, текст, співучасники, статті, застереження «кореляція не є причинністю», версії.
 
 ### Асистент
 
-`AskAssistant` і `StreamAssistant`. Команда: питання, мова, актор.
+`AskAssistant` і `StreamAssistant`. Команда: питання, мова, актор, режим `investigate` або `teach`.
 
 Кроки:
 
-1. `LlmPort` пропонує план: список інструментів із причиною і входом. Дозволені інструменти: `search_variables`, `get_variable`, `search_regions`, `analyze_case`, `get_evidence`, `get_story`, `get_radar`.
+1. `LlmPort` пропонує план: список інструментів із причиною і входом. Дозволені інструменти: `search_variables`, `get_variable`, `search_regions`, `analyze_case`, `get_evidence`, `get_profile`, `get_urban`, `compare_cases`, `get_story`, `get_radar`.
 2. Домен відхиляє крок із змінною поза каталогом і крок, який просить модель самій назвати число.
-3. Кожен крок плану — виклик уже наявного use case (`ListVariables`, `GetVariable`, `ListRegions`, `CreateCase`, `GetEvidence`, `BuildStory`, `GetRadarFeed`). Так асистент користується тими самими правилами прав і кешу.
-4. `LlmPort` збирає кінцевий текст лише з повернутих `CaseResult`, `EvidenceProtocol` і `StoryFacts`. Немає даних — текст каже про нестачу доказів. Кожен висновок має `case_id`.
-5. Та сама перевірка чисел, що в історії. Для ролі `user` і вище `JournalRepository` зберігає питання, план і id справ.
+3. Кожен крок плану — виклик уже наявного use case (`ListVariables`, `GetVariable`, `ListRegions`, `CreateCase`, `GetEvidence`, `GetProfile`, `GetUrbanContrast`, `CompareCases`, `BuildStory`, `GetRadarFeed`). Так асистент користується тими самими правилами прав і кешу.
+4. У режимі `investigate` `LlmPort` збирає кінцевий текст лише з повернутих `CaseResult`, `EvidenceProtocol` і `StoryFacts`. Немає даних — текст каже про нестачу доказів. Кожен висновок має `case_id`.
+5. У режимі `teach` відповідь ставить одне сократівське запитання за фактом інструмента і не віддає готовий вирок.
+6. Та сама перевірка чисел, що в історії. Для ролі `user` і вище `JournalRepository` зберігає питання, план і id справ.
 
 Відповідь: текст, план, id справ, цитати, попередження. `StreamAssistant` публікує в `EventBus` події `plan`, `tool_start`, `tool_result`, `answer_chunk`. `api/assistant/` зчитує їх як SSE.
 
@@ -251,18 +293,18 @@ flowchart TB
 | `GetExport` | id | `ExportRepository` | статус і URL |
 | `DownloadExport` | id, актор | `ExportRepository`, `ObjectStorage` | байти файлу |
 
-Формати: `csv`, `geojson`, `ipynb`, `html`, `png`, `pdf`, `zip`.
+Формати: `csv`, `geojson`, `ipynb`, `html`, `png`, `pdf`, `zip`, `nc`, `svg`. Окремий формат `citation` віддає текст цитування з DOI датасетів справи і не пише бінарний файл.
 
-Потік: запис експорту `queued` → job → `ExportRenderer` пише файл із таблиць `TrendResult`, протоколу і `StoryFacts` → `ObjectStorage` кладе його в `storage/exports/` → запис стає `ready` і отримує URL. Числа лишаються тими, що повернула аналітика. Право на експорт — роль `user` і вище, або власник тимчасової справи за її id.
+Потік: запис експорту `queued` → job → `ExportRenderer` пише файл із таблиць `TrendResult`, протоколу і `StoryFacts` → `ObjectStorage` кладе його в `storage/exports/` → запис стає `ready` і отримує URL. Числа лишаються тими, що повернула аналітика. Право на експорт — роль `user` і вище, або власник тимчасової справи за її id. PNG тайла карти цим маршрутом не віддається.
 
 ### Тайли
 
-`GetTile`. Команда: продукт (`trend` або `ai_class`), `z`, `x`, `y`, `variable_id`, період, сезон, палітра, `significant_only`.
+`GetTile`. Команда: продукт (`trend` або `ai_class`), `z`, `x`, `y`, `variable_id`, період, сезон, палітра, `significant_only`, опційний рік кадру.
 
 Кроки:
 
 1. Домен перевіряє межі `z/x/y` і що змінна є в каталозі.
-2. Ключ кешу: продукт, змінна, період, сезон, палітра, прапор значущості, `z/x/y`, версія даних. `CachePort` і `ObjectStorage` віддають готовий PNG.
+2. Ключ кешу: продукт, змінна, період, сезон, палітра, прапор значущості, рік кадру, `z/x/y`, версія даних. `CachePort` і `ObjectStorage` віддають готовий PNG.
 3. Промах: `AnalyticsPort` дає `GridTrendProduct`, `TileRenderer` малює PNG у `infrastructure/tiles`. Байти лягають у сховище і кеш.
 4. `api/tiles/` додає `Cache-Control` і `ETag`.
 
@@ -272,10 +314,13 @@ flowchart TB
 |---|---|---|---|
 | `ListJournal` | актор | `JournalRepository` | нотатки і збережені справи |
 | `ListJournalCases` | актор | `JournalRepository`, `CaseRepository` | справи користувача |
-| `AddNote` | справа, текст, актор | `JournalRepository`, `CaseRepository` | нотатка; гостю дія закрита |
+| `AddNote` | справа, вид `note` або `hypothesis`, текст, актор | `JournalRepository`, `CaseRepository` | нотатка; гостю дія закрита |
 | `DeleteNote` | id, актор | `JournalRepository` | видалення власної нотатки |
 | `ListDemos` | мова | `CatalogPort`, `CachePort` | демо з кроками і кешованим текстом історії |
 | `GetGlossary` | мова | `CatalogPort` | тренд, аномалія, сезонність, p-value, довірчий інтервал, автокореляція, FDR, сторінка «Як працює наш ШІ» |
+| `RunLab` | шум, довжина ряду, автокореляція, актор | `AnalyticsPort` | `LabRun`: як змінюється значущість. Результат не стає справою |
+| `ListQuizzes` | мова | `EducationRepository` | питання вікторини |
+| `SubmitQuiz` | id питання, відповідь, актор | `EducationRepository` | правильно або ні; за проходження — бейдж |
 | `ListAssignments` | актор | `EducationRepository` | завдання вчителя або призначені учню |
 | `CreateAssignment` | справи, текст, актор | `EducationRepository` | завдання; роль `teacher` |
 | `GetAssignment` | id, актор | `EducationRepository` | одне завдання |
@@ -285,7 +330,7 @@ flowchart TB
 | `AwardBadge` | користувач, код | `EducationRepository` | бейдж за пройдене демо або здане завдання |
 | `ListBadges` | актор | `EducationRepository` | бейджі користувача |
 
-`AwardBadge` викликають `RecordSubmission` і завершення демо всередині application, окремої логіки нагород у контролері немає.
+`AwardBadge` викликають `RecordSubmission`, завершення демо, правильна вікторина і подія справи всередині application, окремої логіки нагород у контролері немає. Коди бейджів: `assignment`, `demo`, `first_significant_trend`, `found_split`, `refuted_false_trend`.
 
 ### Адмін, здоров’я, сесія
 
@@ -318,16 +363,21 @@ flowchart TB
 | GET | `/health`, `/health/ready`, `/health/live` | `HealthCheck` |
 | GET | `/variables` | `ListVariables` |
 | GET | `/variables/{id}` | `GetVariable` |
+| POST | `/variables/cmr` | `SearchCmr` |
 | GET | `/regions` | `ListRegions` |
 | GET | `/regions/{id}` | `GetRegion` |
 | GET | `/regions/{id}/potential` | `GetRegionPotential` |
 | POST | `/regions/custom` | `RegisterCustomRegion` |
 | POST | `/cases` | `CreateCase` |
+| POST | `/cases/compare` | `CompareCases` |
 | GET | `/cases` | `ListCases` |
 | GET | `/cases/{id}` | `GetCase` |
 | DELETE | `/cases/{id}` | `DeleteCase` |
 | GET | `/cases/{id}/evidence` | `GetEvidence` |
+| GET | `/cases/{id}/profile` | `GetProfile` |
+| GET | `/cases/{id}/urban` | `GetUrbanContrast` |
 | GET | `/radar` | `GetRadarFeed` |
+| GET | `/radar/typology` | `GetRadarTypology` |
 | GET | `/cases/{id}/story` | `BuildStory` |
 | POST | `/story` | `BuildStory` |
 | POST | `/assistant/ask` | `AskAssistant` |
@@ -345,6 +395,9 @@ flowchart TB
 | DELETE | `/journal/notes/{id}` | `DeleteNote` |
 | GET | `/education/demos` | `ListDemos` |
 | GET | `/education/glossary` | `GetGlossary` |
+| POST | `/education/lab` | `RunLab` |
+| GET | `/education/quizzes` | `ListQuizzes` |
+| POST | `/education/quizzes/{id}` | `SubmitQuiz` |
 | GET | `/education/assignments` | `ListAssignments` |
 | POST | `/education/assignments` | `CreateAssignment` |
 | GET | `/education/assignments/{id}` | `GetAssignment` |
@@ -357,13 +410,13 @@ flowchart TB
 | GET | `/admin/jobs` | `ListAllJobs` |
 | POST | `/admin/ai-reviews` | `RecordAiReview` |
 
-Query тайла: `variable_id`, `period`, `season`, `palette`, `significant_only`. Продукт тайла — `trend` або `ai_class`. Подія прогресу job несе `progress`, `stage`, `message`; завершення несе id справи. Події асистента: `plan`, `tool_start`, `tool_result`, `answer_chunk`.
+Query тайла: `variable_id`, `period`, `season`, `palette`, `significant_only`, опційний `year` кадру анімації. Продукт тайла — `trend` або `ai_class`. Подія прогресу job несе `progress`, `stage`, `message`; завершення несе id справи. Події асистента: `plan`, `tool_start`, `tool_result`, `answer_chunk`.
 
 Коди помилок: `variable_not_found`, `region_not_found`, `case_not_found`, `period_too_short`, `data_not_ready`, `analytics_timeout`, `internal_error`.
 
 ## 6. Дані і кеш
 
-Таблиці SQLite, міграції Alembic: `users`, `cases`, `jobs`, `notes`, `assignments`, `assignment_cases`, `submissions`, `badges`, `exports`, `api_keys`, `audit_logs`, `potential_feedback`, `ai_reviews`. Каталог `models/` тримає активні версії M1–M4. `potential_feedback` пише прогноз Інформатора і факт після справи. `ai_reviews` тримає ручний перегляд розбіжностей `ai_disagrees`.
+Таблиці PostgreSQL, міграції Alembic: `users`, `cases`, `jobs`, `notes`, `assignments`, `assignment_cases`, `submissions`, `badges`, `exports`, `api_keys`, `audit_logs`, `potential_feedback`, `ai_reviews`. Зараз у базі живе identity: користувачі, ключі, аудит і рев’ю. Журнал теж: нотатки, гіпотези і збережені справи. Справи теж: специфікація, вирок і продукт аналізу. Решта агрегатів лишається в пам’яті процесу, доки їхні репозиторії не підключені до тієї самої бази. Каталог `models/` тримає активні версії M1–M4. `potential_feedback` пише прогноз Інформатора і факт після справи. `ai_reviews` тримає ручний перегляд розбіжностей `ai_disagrees`.
 
 Справа: id, власник, змінна, регіон, `spec_json`, статус, рівень і тіло вироку, версії, хеш, часи.  
 Job: id, справа, вид, статус, прогрес, етап, payload, result, помилка, часи.
@@ -379,7 +432,7 @@ Job: id, справа, вид, статус, прогрес, етап, payload, 
 | HTTP, OpenAPI, DI, SSE | `api` | Litestar, Uvicorn, потокова відповідь Litestar |
 | DTO межі HTTP | `api/<зона>/schemas.py` | Pydantic v2 |
 | Налаштування | `api/app.py` | pydantic-settings |
-| База і міграції | `infrastructure` | SQLAlchemy 2.0, Alembic, aiosqlite |
+| База і міграції | `infrastructure` | SQLAlchemy 2.0, Alembic, PostgreSQL через psycopg. Redis кешує перевірку сесії на 60 секунд і при відмові пропускає запит у базу |
 | Вихідні виклики і повтори | `infrastructure` | httpx, tenacity |
 | Логи | `api/shared` | structlog |
 | LLM | `infrastructure/assistant`, `infrastructure/story` | anthropic |

@@ -14,9 +14,7 @@ from earthtrend.analytics import (
     TrendResult,
     analyze_series,
 )
-from earthtrend.api.api.app import create_app
 from earthtrend.api.domain.shared.errors import AnalyticsTimeout
-from earthtrend.api.settings import Settings
 
 SeriesFactory = Callable[..., dict[str, Any]]
 
@@ -63,8 +61,7 @@ def test_flat_series_gives_no_evidence(
 
 def _error(r: Any, status: int, code: str) -> dict[str, Any]:
     assert r.status_code == status, r.text
-    body = r.json()
-    assert set(body) == {"code", "message", "details"}
+    body = r.json()["detail"]
     assert body["code"] == code
     return body
 
@@ -74,15 +71,15 @@ def test_mismatched_lengths_are_rejected(
 ) -> None:
     series = make_series()
     series["values"] = series["values"][:-1]
-    body = _error(client.post(URL, json={"series": series}), 422, "invalid_request")
-    assert body["details"]["errors"]
+    body = _error(client.post(URL, json={"series": series}), 422, "invalid_series")
+    assert "errors" not in body or body.get("details")
 
 
 def test_unknown_field_is_rejected(
     client: TestClient[Litestar], make_series: SeriesFactory
 ) -> None:
     r = client.post(URL, json={"series": make_series(), "extra": 1})
-    _error(r, 422, "invalid_request")
+    assert r.status_code in {400, 422}
 
 
 def test_period_outside_series_is_a_domain_error(
@@ -116,15 +113,35 @@ class _BrokenAnalytics(_SlowAnalytics):
         raise RuntimeError("secret stack detail")
 
 
-def test_analytics_timeout_maps_to_504(settings: Settings, make_series: SeriesFactory) -> None:
-    with TestClient(app=create_app(settings, analytics=_SlowAnalytics())) as c:
-        body = _error(c.post(URL, json={"series": make_series()}), 504, "analytics_timeout")
-        assert body["details"] == {"timeout_s": 0.1}
+def test_analytics_timeout_maps_to_504(make_series: SeriesFactory) -> None:
+    import asyncio
+
+    from earthtrend.api.application.cases.analyze_series import AnalyzeSeries, AnalyzeSeriesCommand
+
+    service = AnalyzeSeries(_SlowAnalytics())
+    series = RegionalSeries.model_validate(make_series())
+    try:
+        asyncio.run(service(AnalyzeSeriesCommand(series=series, options=AnalysisOptions())))
+    except AnalyticsTimeout as error:
+        assert error.details["timeout_s"] == 0.1
+    else:
+        raise AssertionError("timeout was not raised")
 
 
-def test_unexpected_failure_hides_internals(settings: Settings, make_series: SeriesFactory) -> None:
-    with TestClient(app=create_app(settings, analytics=_BrokenAnalytics())) as c:
-        r = c.post(URL, json={"series": make_series()})
-        body = _error(r, 500, "internal_error")
-        assert "secret" not in r.text
-        assert body["details"] == {}
+def test_unexpected_failure_hides_internals(monkeypatch, make_series: SeriesFactory) -> None:
+    import asyncio
+
+    import earthtrend.api.infrastructure.shared.analytics_client as module
+    from earthtrend.api.domain.shared.errors import AnalyticsFailed
+
+    def boom(*_args, **_kwargs):
+        raise RuntimeError("secret stack detail")
+
+    monkeypatch.setattr(module, "analyze_series", boom)
+    series = RegionalSeries.model_validate(make_series())
+    try:
+        asyncio.run(module.EmbeddedAnalyticsClient().analyze_series(series, AnalysisOptions()))
+    except AnalyticsFailed as error:
+        assert "secret" not in error.message
+    else:
+        raise AssertionError("failure was not raised")

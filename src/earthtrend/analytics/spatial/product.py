@@ -107,7 +107,10 @@ def _ai_layer(
     cube: NDArray[np.float64], dates: Sequence[date], valid: NDArray[np.bool_]
 ) -> tuple[NDArray[np.int64] | None, NDArray[np.float64] | None]:
     """M1 class per valid cell from monthly anomalies; (None, None) without a model."""
-    from earthtrend.analytics.ml.trendnet import classify_grid
+    try:
+        from earthtrend.analytics.ml.trendnet import classify_grid
+    except ImportError:
+        return None, None
 
     years, months = split_dates(dates)
     cube = np.asarray(cube, dtype=np.float64)

@@ -1,42 +1,59 @@
-"""``GET /health``, ``/health/ready``, ``/health/live``."""
+"""Health routes, outside `/api/v1` so load balancers and Docker use stable paths."""
 
 from __future__ import annotations
 
-from dataclasses import asdict
-from typing import Any
+from litestar import Router, get
+from litestar.response import Response
+from pydantic import BaseModel
 
-from litestar import Response, get
-from litestar.datastructures import State
-from litestar.di import NamedDependency, Provide
-from litestar.status_codes import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
-
-from earthtrend.api.application.health.check import HealthCheck
+from earthtrend.api.application.health.service import HealthCheck, HealthReport
 
 
-def provide_health_check(state: State) -> HealthCheck:
-    return state.health_check
+class ProbeResponse(BaseModel):
+    status: str
+    detail: str
+    latency_ms: float
+    info: dict[str, str]
 
 
-def _response(body: dict[str, Any], strict: bool) -> Response[dict[str, Any]]:
-    degraded = body["status"] != "ok"
-    status = HTTP_503_SERVICE_UNAVAILABLE if strict and degraded else HTTP_200_OK
-    return Response(content=body, status_code=status)
+class HealthResponse(BaseModel):
+    status: str
+    version: str
+    uptime_seconds: float
+    checks: dict[str, ProbeResponse]
 
 
-@get("/health", summary="Overall status with dependency checks")
-async def health(health_check: NamedDependency[HealthCheck]) -> Response[dict[str, Any]]:
-    return _response(asdict(await health_check("full")), strict=False)
+def _body(report: HealthReport) -> HealthResponse:
+    return HealthResponse(
+        status=report.status,
+        version=report.version,
+        uptime_seconds=report.uptime_seconds,
+        checks={
+            name: ProbeResponse(status=item.status, detail=item.detail, latency_ms=item.latency_ms, info=item.info)
+            for name, item in report.checks.items()
+        },
+    )
 
 
-@get("/health/ready", summary="Readiness: 503 while the database or analytics is down")
-async def health_ready(health_check: NamedDependency[HealthCheck]) -> Response[dict[str, Any]]:
-    return _response(asdict(await health_check("ready")), strict=True)
+def _respond(report: HealthReport) -> Response[HealthResponse]:
+    return Response(
+        content=_body(report),
+        status_code=200 if report.serving else 503,
+        headers={"Cache-Control": "no-store"},
+    )
 
 
-@get("/health/live", summary="Liveness: the process answers")
-async def health_live(health_check: NamedDependency[HealthCheck]) -> Response[dict[str, Any]]:
-    return _response(asdict(await health_check("live")), strict=True)
+def health_router(health: HealthCheck) -> Router:
+    @get("/live", summary="Liveness: the process answers")
+    async def live() -> Response[HealthResponse]:
+        return _respond(health.live())
 
+    @get("/ready", summary="Readiness: critical dependencies answer")
+    async def ready() -> Response[HealthResponse]:
+        return _respond(await health.ready())
 
-health_handlers = [health, health_ready, health_live]
-health_dependencies = {"health_check": Provide(provide_health_check, sync_to_thread=False)}
+    @get("/", summary="Full health report")
+    async def full() -> Response[HealthResponse]:
+        return _respond(await health.full())
+
+    return Router(path="/health", route_handlers=[live, ready, full])

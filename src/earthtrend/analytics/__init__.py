@@ -35,6 +35,8 @@ from earthtrend.analytics.radar import (
 )
 from earthtrend.analytics.regional.reduce import regional_series
 from earthtrend.analytics.spatial.product import GridTrendProduct, analyze_grid
+from earthtrend.analytics.spatial.profile import vertical_profile
+from earthtrend.analytics.spatial.urban import urban_contrast
 from earthtrend.analytics.story import StoryFacts, load_process_graph, story_lens
 
 __all__ = [
@@ -59,6 +61,8 @@ __all__ = [
     "SplitResult",
     "Zone",
     "analyze_grid",
+    "vertical_profile",
+    "urban_contrast",
     "Magnitude",
     "QualityFlag",
     "RegionalSeries",

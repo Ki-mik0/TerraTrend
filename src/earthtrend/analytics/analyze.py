@@ -139,7 +139,10 @@ def _ai_opinion(
     """M1 TrendNet opinion (advisory, section 6.7); None without an active model."""
     if not opts.ai_opinion or sen is None or opts.season != "annual":
         return None
-    from earthtrend.analytics.ml.trendnet import ai_opinion
+    try:
+        from earthtrend.analytics.ml.trendnet import ai_opinion
+    except ImportError:
+        return None
 
     _, months = split_dates(p.dates)
     return ai_opinion(

@@ -12,7 +12,7 @@ import pytest
 from litestar import Litestar
 from litestar.testing import TestClient
 
-from earthtrend.api.api.app import create_app
+from earthtrend.api.main import create_app
 from earthtrend.api.settings import Settings
 
 
@@ -28,7 +28,8 @@ def settings(tmp_path: Path) -> Settings:
 
 @pytest.fixture
 def app(settings: Settings) -> Litestar:
-    return create_app(settings)
+    del settings
+    return create_app()
 
 
 @pytest.fixture

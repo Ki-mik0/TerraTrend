@@ -10,15 +10,19 @@ dependencies = [
     "pydantic-settings",
     "sqlalchemy[asyncio]",
     "alembic",
-    "aiosqlite",
+    "psycopg[binary]",
+    "asyncpg",
+    "redis",
     "httpx",
+    "anthropic",
     "tenacity",
     "structlog",
     "jinja2",
     "aiofiles",
     "pyjwt",
     "argon2-cffi",
-    # analytics core
+    "prometheus-client",
+    "pillow",
     "numpy",
     "scipy",
     "statsmodels",
@@ -29,23 +33,23 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# M3 VarSearch training and model inference (stage A10). The core package never imports
-# these; without them search falls back to BM25. `pip install -e ".[varsearch]"`.
+dev = ["pytest", "pytest-asyncio", "pytest-cov", "aiosqlite", "hypothesis", "pytest-benchmark", "ruff", "mypy", "types-PyYAML"]
 varsearch = [
     "sentence-transformers>=3.0",
     "torch",
     "datasets",
     "accelerate",
 ]
-# M2 TrendPotential training and inference (stage A9). Without them no hints are shown.
 potential = [
     "lightgbm>=4.3",
     "scikit-learn>=1.5",
 ]
+docs = ["matplotlib"]
 
 [dependency-groups]
 dev = [
     "pytest",
+    "pytest-asyncio",
     "hypothesis",
     "pytest-cov",
     "pytest-benchmark",
@@ -53,17 +57,26 @@ dev = [
     "mypy",
     "types-PyYAML",
 ]
-docs = [
-    "matplotlib",
-]
+docs = ["matplotlib"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "--cov=earthtrend.api --cov-report=term-missing"
 markers = [
     "slow: long Monte-Carlo checks (deselect with -m 'not slow')",
     "benchmark: performance targets of PLAN_ANALYTICS section 14",
 ]
+
+[tool.coverage.run]
+source = ["earthtrend.api"]
+omit = ["*/__init__.py"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
 
 [tool.ruff]
 line-length = 100
