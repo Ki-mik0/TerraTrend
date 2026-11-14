@@ -13,6 +13,7 @@ class CreateCaseRequest(BaseModel):
     language: str = "uk"
     heavy: bool = False
     series: dict | None = None
+    indicator: str | None = None
     grid: dict | None = None
     profile_levels: dict | None = None
     urban_cube: dict | None = None
@@ -22,6 +23,7 @@ class AnalyzeSeriesRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     series: dict
     options: dict | None = None
+    indicator: str | None = None
 
 
 class CompareRequest(BaseModel):

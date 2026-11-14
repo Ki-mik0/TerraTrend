@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import os
 from datetime import date
 
 import numpy as np
@@ -21,11 +22,15 @@ from earthtrend.analytics import (
     urban_contrast,
     vertical_profile,
 )
+from earthtrend.analytics.indicators.annual import analyze_annual_series
+from earthtrend.analytics.indicators.registry import compute_indicator
+from earthtrend.analytics.ml.storywriter import write_story
 from earthtrend.analytics.models import SeriesMeta
 from earthtrend.analytics.radar.models import RadarRun, RadarSeries
 from earthtrend.analytics.simulate.synthetic import synthetic_series
 from earthtrend.api.domain.cases.model import (
     AlibiResult,
+    AiOpinion,
     AnalysisProduct,
     Changepoint,
     EvidenceProtocol,
@@ -41,7 +46,6 @@ from earthtrend.api.domain.cases.model import (
     VerticalLevel,
     VerticalProfile,
     WitnessesResult,
-    Zone,
 )
 
 
@@ -50,24 +54,74 @@ def _item(protocol, key: str) -> dict:
     return {} if found is None else dict(found.details)
 
 
-def product_from_series(raw: dict, levels: dict | None = None, urban: dict | None = None) -> AnalysisProduct:
+def domain_opinion(result) -> AiOpinion:
+    opinion = result.ai_opinion
+    if opinion is None:
+        return AiOpinion(predicted_class="linear", confidence="medium")
+    return AiOpinion(
+        predicted_class=opinion.predicted_class,
+        confidence=opinion.confidence,
+        disagrees=not opinion.agrees_with_statistics,
+    )
+
+
+def product_from_series(raw: dict, levels: dict | None = None, urban: dict | None = None) -> tuple[AnalysisProduct, AiOpinion]:
     series = RegionalSeries.model_validate(raw)
     options = AnalysisOptions()
     result = analyze_series(series, options)
     protocol = build_protocol(series, options)
     witnesses = _item(protocol, "witnesses")
     datasets = witnesses.get("datasets") or []
-    confirmed = sum(1 for row in datasets if row.get("significant"))
-    triangle = _item(protocol, "robustness")
-    alibi = _item(protocol, "alibi")
-    ols = result.test("ols_ar1")
+    return _packed(
+        result,
+        series,
+        levels,
+        urban,
+        confirmed=sum(1 for row in datasets if row.get("significant")),
+        total=len(datasets),
+        triangle=_item(protocol, "robustness"),
+        alibi=_item(protocol, "alibi"),
+    )
+
+
+def product_from_indicator(
+    raw: dict, code: str, levels: dict | None = None, urban: dict | None = None
+) -> tuple[AnalysisProduct, AiOpinion]:
+    series = RegionalSeries.model_validate(raw)
+    options = AnalysisOptions()
+    values = np.array([np.nan if value is None else float(value) for value in series.values], dtype=np.float64)
+    try:
+        years, annual = compute_indicator(code, series.dates, values, base=options.baseline, lat=raw.get("lat"))
+    except KeyError as error:
+        raise ValueError(f"unknown indicator {code}") from error
+    column = np.asarray(annual, dtype=np.float64).reshape(len(years), -1)[:, 0]
+    cleaned = [None if not np.isfinite(value) else float(value) for value in column]
+    result = analyze_annual_series(years, cleaned, series.meta, options, series.stable_fraction)
+    return _packed(result, series, levels, urban, confirmed=0, total=0, triangle={}, alibi={})
+
+
+def indicator_trend(raw: dict, code: str, options: dict | None = None):
+    series = RegionalSeries.model_validate(raw)
+    parsed = AnalysisOptions.model_validate(options or {})
+    values = np.array([np.nan if value is None else float(value) for value in series.values], dtype=np.float64)
+    try:
+        years, annual = compute_indicator(code, series.dates, values, base=parsed.baseline, lat=raw.get("lat"))
+    except KeyError as error:
+        raise ValueError(f"unknown indicator {code}") from error
+    column = np.asarray(annual, dtype=np.float64).reshape(len(years), -1)[:, 0]
+    cleaned = [None if not np.isfinite(value) else float(value) for value in column]
+    return analyze_annual_series(years, cleaned, series.meta, parsed, series.stable_fraction)
+
+
+def _packed(result, series, levels, urban, confirmed, total, triangle, alibi):
+    ols = result.test("ols_ar1") or result.test("ols_ar1_annual")
     months = {row.month: row.slope_per_decade or 0.0 for row in result.seasonal_breakdown}
     slope = float(result.primary_slope_per_decade or 0.0)
     direction = result.direction if result.direction in {"increasing", "decreasing"} else "none"
     profile = _profile(levels) if levels else VerticalProfile(levels=())
     city = _urban(urban) if urban else UrbanContrast(city_slope=slope, ring_slope=slope, difference=0.0)
     digest = hashlib.sha256(f"{result.verdict.code}:{slope}".encode()).hexdigest()
-    return AnalysisProduct(
+    product = AnalysisProduct(
         verdict=Verdict(
             code=result.verdict.code,
             ruleset="verdict_rules_v1",
@@ -76,7 +130,7 @@ def product_from_series(raw: dict, levels: dict | None = None, urban: dict | Non
         ),
         evidence=EvidenceProtocol(
             version="verdict_rules_v1",
-            witnesses=WitnessesResult(confirmed=confirmed, total=len(datasets)),
+            witnesses=WitnessesResult(confirmed=confirmed, total=total),
             triangle=TriangleResult(same_sign_share=float(triangle.get("same_sign_share", 1.0))),
             alibi=AlibiResult(
                 b_raw=float(alibi.get("b_raw", alibi.get("coefficient", 0.0)) or 0.0),
@@ -99,7 +153,7 @@ def product_from_series(raw: dict, levels: dict | None = None, urban: dict | Non
                 Changepoint(year=point.at.year, probability=float(point.probability or 0.0))
                 for point in result.changepoints
             ),
-            zones=tuple(Zone(sign=zone.sign, slope_decade=zone.mean_slope_per_decade) for zone in []),
+            zones=(),
             months=tuple(MonthSlope(month=month, slope=months.get(month, 0.0)) for month in range(1, 13)),
             gam=GamResult(accelerating=bool(result.nonlinear and result.nonlinear.shape == "accelerating")),
         ),
@@ -110,6 +164,7 @@ def product_from_series(raw: dict, levels: dict | None = None, urban: dict | Non
         algorithm_version=ANALYTICS_VERSION,
         result_hash=digest,
     )
+    return product, domain_opinion(result)
 
 
 def _profile(raw: dict) -> VerticalProfile:
@@ -196,7 +251,27 @@ def grid_product(raw: dict):
         np.asarray(raw["lat"], dtype=np.float64),
         np.asarray(raw["lon"], dtype=np.float64),
         dates,
+        ai=True,
     )
+
+
+def story_text(raw: dict, language: str) -> tuple[str, str]:
+    facts = story_lens(RegionalSeries.model_validate(raw))
+    lang = language if language in {"uk", "en"} else "uk"
+    written = write_story(facts, lang, llm=_openrouter(), llm_label=os.environ.get("OPENROUTER_MODEL", "").strip() or "openrouter")
+    return written.text, "m4"
+
+
+def _openrouter():
+    from earthtrend.api.infrastructure.shared.openrouter import complete_sync, key_from_env
+
+    if not key_from_env():
+        return None
+
+    def complete(system: str, user: str) -> str:
+        return complete_sync(system, user)
+
+    return complete
 
 
 def lab_series(noise: float, years: int, autocorrelation: float, trend: float, seed: int) -> dict:

@@ -145,3 +145,35 @@ def test_unexpected_failure_hides_internals(monkeypatch, make_series: SeriesFact
         assert "secret" not in error.message
     else:
         raise AssertionError("failure was not raised")
+
+
+def test_unknown_indicator_is_rejected(client: TestClient[Litestar], make_series: SeriesFactory) -> None:
+    response = client.post(URL, json={"series": make_series(), "indicator": "nope"})
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "indicator_unknown"
+
+
+def test_frost_days_returns_a_trend(client: TestClient[Litestar]) -> None:
+    from datetime import date, timedelta
+
+    start = date(2000, 1, 1)
+    dates = [(start + timedelta(days=offset)).isoformat() for offset in range(800)]
+    values = [-2.0 if offset % 10 < 3 else 4.0 for offset in range(800)]
+    body = {
+        "indicator": "FD",
+        "series": {
+            "meta": {
+                "variable_id": "frost_days",
+                "concept_id": "frost_days",
+                "dataset_id": "daily_tmin",
+                "dataset_version": "1",
+                "units": "days",
+                "region_id": "ukraine",
+            },
+            "dates": dates,
+            "values": values,
+        },
+    }
+    response = client.post(URL, json=body)
+    assert response.status_code == 200
+    assert response.json()["verdict"]["code"]

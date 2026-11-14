@@ -26,7 +26,7 @@ from pydantic import ValidationError
 from earthtrend.analytics import AnalysisOptions, RegionalSeries, TrendResult
 from earthtrend.api.application.cases.analyze_series import AnalyzeSeries, AnalyzeSeriesCommand
 from earthtrend.api.domain.shared.errors import DomainError
-from earthtrend.api.infrastructure.analytics_bridge import run_blocking, series_from_grid
+from earthtrend.api.infrastructure.analytics_bridge import indicator_trend, run_blocking, series_from_grid
 from earthtrend.api.infrastructure.shared.analytics_client import EmbeddedAnalyticsClient
 from earthtrend.api.application.cases.service import CaseService
 from earthtrend.api.application.identity.service import IdentityService
@@ -98,15 +98,22 @@ def cases_router(service: CaseService, identity: IdentityService) -> Router:
     @post("/analyze", status_code=200)
     async def analyze(data: JSONBody[AnalyzeSeriesRequest]) -> TrendResult:
         try:
+            if data.indicator:
+                return await run_blocking(indicator_trend, data.series, data.indicator, data.options)
             options = AnalysisOptions.model_validate(data.options or {})
             series = RegionalSeries.model_validate(data.series)
             return await AnalyzeSeries(EmbeddedAnalyticsClient())(
                 AnalyzeSeriesCommand(series=series, options=options)
             )
         except (ValidationError, ValueError) as error:
+            unknown = str(error).startswith("unknown indicator")
             raise HTTPException(
                 status_code=422,
-                detail={"code": "invalid_series", "message": "Ряд не читається", "details": {"errors": str(error)}},
+                detail={
+                    "code": "indicator_unknown" if unknown else "invalid_series",
+                    "message": "Невідомий індикатор" if unknown else "Ряд не читається",
+                    "details": {"errors": str(error)},
+                },
             ) from error
         except DomainError as error:
             status = {"invalid_series": 422, "analytics_timeout": 504}.get(error.code, 500)
@@ -130,6 +137,8 @@ def cases_router(service: CaseService, identity: IdentityService) -> Router:
         )
         try:
             payload = data.series
+            if data.indicator and payload is None:
+                raise ValueError("indicator needs a daily series")
             if data.grid is not None:
                 payload = await run_blocking(series_from_grid, data.grid)
             case = await service.create(
@@ -139,7 +148,18 @@ def cases_router(service: CaseService, identity: IdentityService) -> Router:
                 series=payload,
                 profile_levels=data.profile_levels,
                 urban_cube=data.urban_cube,
+                indicator=data.indicator,
             )
+        except ValueError as error:
+            unknown = str(error).startswith("unknown indicator")
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "indicator_unknown" if unknown else "invalid_series",
+                    "message": "Невідомий індикатор" if unknown else "Ряд не читається",
+                    "details": {"errors": str(error)},
+                },
+            ) from error
         except CaseError as error:
             raise _http(error) from error
         status = 202 if case.status == "queued" else 201

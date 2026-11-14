@@ -108,6 +108,7 @@ class CaseFacts:
             versions=facts.versions,
             variable_name=facts.variable_name,
             region_name=facts.region_name,
+            lens_series=case.source_series,
         )
 
     async def for_spec(self, *, variable_id: str, region_id: str) -> StoryFacts:

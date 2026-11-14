@@ -75,6 +75,7 @@ class CaseService:
         series: dict | None = None,
         profile_levels: dict | None = None,
         urban_cube: dict | None = None,
+        indicator: str | None = None,
     ) -> Case:
         await self._known(spec)
         require_period(spec.period_start, spec.period_end)
@@ -89,8 +90,9 @@ class CaseService:
         if spec.heavy:
             case.queue(await self._jobs.enqueue(case.id))
         else:
+            opinion = AiOpinion(predicted_class="linear", confidence="medium")
             if series is not None:
-                product = await self._from_analytics(series, profile_levels, urban_cube)
+                product, opinion = await self._from_analytics(series, profile_levels, urban_cube, indicator)
                 case.source_series = series
             else:
                 product = await self._load_product(spec)
@@ -98,7 +100,7 @@ class CaseService:
                 verdict=product.verdict,
                 evidence=product.evidence,
                 series=product.series,
-                ai_opinion=AiOpinion(predicted_class="linear", confidence="medium"),
+                ai_opinion=opinion,
                 profile=product.profile,
                 urban=product.urban,
                 catalog_version=product.catalog_version,
@@ -209,9 +211,11 @@ class CaseService:
         except CatalogError as error:
             raise CaseError(error.code, error.message) from error
 
-    async def _from_analytics(self, series: dict, levels: dict | None, urban: dict | None) -> AnalysisProduct:
-        from earthtrend.api.infrastructure.analytics_bridge import product_from_series, run_blocking
+    async def _from_analytics(self, series: dict, levels: dict | None, urban: dict | None, indicator: str | None):
+        from earthtrend.api.infrastructure.analytics_bridge import product_from_indicator, product_from_series, run_blocking
 
+        if indicator:
+            return await run_blocking(product_from_indicator, series, indicator, levels, urban)
         return await run_blocking(product_from_series, series, levels, urban)
 
     async def _load_product(self, spec: CaseSpec) -> AnalysisProduct:

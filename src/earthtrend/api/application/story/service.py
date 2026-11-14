@@ -85,7 +85,10 @@ class StoryService:
                 story.source = "cache"
                 return story
         draft = await self._narrator.write(language=language, facts=facts)
-        text, kept = keep_or_template(draft.text, facts, language)
+        if draft.source == "m4":
+            text, kept = draft.text, True
+        else:
+            text, kept = keep_or_template(draft.text, facts, language)
         story = Story(
             id="story_" + hashlib.sha256(key.encode("utf-8")).hexdigest()[:16],
             language=language,

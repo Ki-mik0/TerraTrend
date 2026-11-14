@@ -89,6 +89,7 @@ class StoryFacts:
     versions: dict[str, str] = field(default_factory=dict, hash=False)
     variable_name: str = ""
     region_name: str = ""
+    lens_series: dict | None = None
 
     def allowed_numbers(self) -> set[str]:
         """Numbers a text may use: the computed values, never ids, paper titles, URLs or DOIs."""
