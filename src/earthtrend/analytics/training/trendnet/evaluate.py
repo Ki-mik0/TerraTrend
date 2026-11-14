@@ -95,13 +95,19 @@ def evaluate_split(
     out["coverage90"] = float(((res["slope"] >= lo) & (res["slope"] <= hi)).mean())
 
     # Power on linear trends vs MK-AR1 (same series), and MK's own false alarms.
-    mk_detect = np.zeros(labels.size, dtype=bool)
+    mk_p = np.ones(labels.size)
     for i in np.flatnonzero(null | linear):
         mk = mk_ar1(_series(res["features"][i], res["mask"][i]))
-        mk_detect[i] = bool(mk and mk.p_value < alpha)
+        mk_p[i] = mk.p_value if mk else 1.0
+    out["false_alarm_mk"] = float((mk_p[null] < alpha).mean())
+    out["power_linear_mk_nominal"] = float((mk_p[linear] < alpha).mean())
+    # Section 11.2: power is compared "at the same false-alarm rate": MK's p threshold is
+    # set on this set's no-signal series so MK fires as often as the model does.
+    p_thr = float(np.quantile(mk_p[null], max(out["false_alarm"], 1e-6)))
+    mk_detect = mk_p <= p_thr
+    out["mk_threshold_at_matched_fa"] = p_thr
     out["power_linear"] = float(detect[linear].mean())
     out["power_linear_mk"] = float(mk_detect[linear].mean())
-    out["false_alarm_mk"] = float(mk_detect[null].mean())
     bins = [(0.0, 0.25), (0.25, 0.5), (0.5, 1.0), (1.0, 10.0)]
     out["power_by_snr"] = [
         {
