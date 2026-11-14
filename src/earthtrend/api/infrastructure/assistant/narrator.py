@@ -1,17 +1,20 @@
-"""Narrators: a local template, and Claude through the Anthropic SDK when a key is configured."""
+"""Narrators: a local template, and OpenRouter when a key is configured."""
 
 from __future__ import annotations
 
 import json
-import os
 from typing import Any
 
-import anthropic
+import httpx
 
 from earthtrend.api.domain.assistant.exchange import ALLOWED_TOOLS, ToolStep, message
-
-DEFAULT_MODEL = "claude-opus-5-5"
-FALLBACK_BETA = "server-side-fallback-2026-07-01"
+from earthtrend.api.infrastructure.shared.openrouter import (
+    DEFAULT_MODEL,
+    OpenRouter,
+    OpenRouterError,
+    key_from_env,
+    model_from_env,
+)
 
 _VARIABLE_HINTS: tuple[tuple[tuple[str, ...], str], ...] = (
     (("ґрунт", "сох", "посух", "волог", "soil", "drought", "dry"), "gldas_sm"),
@@ -142,17 +145,16 @@ def plan_schema(catalog_ids: set[str]) -> dict[str, Any]:
     }
 
 
-class AnthropicNarrator:
-    def __init__(self, client: Any, model: str = DEFAULT_MODEL) -> None:
-        self._client = client
-        self._model = model
+class OpenRouterNarrator:
+    def __init__(self, router: OpenRouter) -> None:
+        self._router = router
+        self._model = router.model
 
     async def plan(self, *, question: str, language: str, mode: str, catalog_ids: set[str]) -> list[ToolStep]:
-        raw = await self._complete(
+        raw = await self._router.complete(
             system=SYSTEM_PLAN,
-            prompt=f"Language: {language}. Mode: {mode}. Catalog variables: {sorted(catalog_ids)}.\n"
-            f"Question: {question}",
-            output_config={"effort": "low", "format": {"type": "json_schema", "schema": plan_schema(catalog_ids)}},
+            user=f"Language: {language}. Mode: {mode}. Catalog variables: {sorted(catalog_ids)}.\nQuestion: {question}",
+            json_schema=plan_schema(catalog_ids),
             max_tokens=4000,
         )
         payload = json.loads(raw)
@@ -161,37 +163,18 @@ class AnthropicNarrator:
     async def answer(
         self, *, question: str, language: str, mode: str, facts: list[dict[str, Any]], case_ids: list[str]
     ) -> str:
-        text = await self._complete(
+        return await self._router.complete(
             system=SYSTEM_TEACH if mode == "teach" else SYSTEM_INVESTIGATE,
-            prompt=f"Language: {language}. Cases: {case_ids}.\nQuestion: {question}\n"
+            user=f"Language: {language}. Cases: {case_ids}.\nQuestion: {question}\n"
             f"Facts: {json.dumps(facts, ensure_ascii=False, default=str)}",
-            output_config={"effort": "low"},
             max_tokens=4000,
         )
-        return text.strip()
-
-    async def _complete(self, *, system: str, prompt: str, output_config: dict[str, Any], max_tokens: int) -> str:
-        response = await self._client.beta.messages.create(
-            model=self._model,
-            max_tokens=max_tokens,
-            system=system,
-            messages=[{"role": "user", "content": prompt}],
-            output_config=output_config,
-            betas=[FALLBACK_BETA],
-            fallbacks="default",
-        )
-        if response.stop_reason in {"refusal", "max_tokens"}:
-            raise ValueError(f"model stopped: {response.stop_reason}")
-        text = "".join(block.text for block in response.content if block.type == "text")
-        if not text.strip():
-            raise ValueError("model returned no text")
-        return text
 
 
 class FallbackNarrator:
-    """Use Claude when it is configured, and the template when it is not or the call fails."""
+    """Use OpenRouter when it is configured, and the template when it is not or the call fails."""
 
-    def __init__(self, template: TemplateNarrator, model: AnthropicNarrator | None) -> None:
+    def __init__(self, template: TemplateNarrator, model: OpenRouterNarrator | None) -> None:
         self._template = template
         self._model = model
 
@@ -199,7 +182,7 @@ class FallbackNarrator:
         if self._model is not None:
             try:
                 return await self._model.plan(question=question, language=language, mode=mode, catalog_ids=catalog_ids)
-            except (anthropic.APIError, ValueError, KeyError, TypeError):
+            except (OpenRouterError, httpx.HTTPError, ValueError, KeyError, TypeError, json.JSONDecodeError):
                 pass
         return await self._template.plan(question=question, language=language, mode=mode, catalog_ids=catalog_ids)
 
@@ -211,7 +194,7 @@ class FallbackNarrator:
                 return await self._model.answer(
                     question=question, language=language, mode=mode, facts=facts, case_ids=case_ids
                 )
-            except (anthropic.APIError, ValueError, KeyError, TypeError):
+            except (OpenRouterError, httpx.HTTPError, ValueError, KeyError, TypeError):
                 pass
         return await self._template.answer(
             question=question, language=language, mode=mode, facts=facts, case_ids=case_ids
@@ -219,9 +202,7 @@ class FallbackNarrator:
 
 
 def narrator_from_env() -> FallbackNarrator:
-    key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    key = key_from_env()
     if not key:
         return FallbackNarrator(TemplateNarrator(), None)
-    model = os.environ.get("ANTHROPIC_MODEL", "").strip() or DEFAULT_MODEL
-    client = anthropic.AsyncAnthropic(api_key=key, timeout=30.0, max_retries=2)
-    return FallbackNarrator(TemplateNarrator(), AnthropicNarrator(client, model))
+    return FallbackNarrator(TemplateNarrator(), OpenRouterNarrator(OpenRouter(key, model_from_env())))

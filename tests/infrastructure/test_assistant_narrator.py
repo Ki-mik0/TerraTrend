@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import json
-from types import SimpleNamespace
 
-import anthropic
 import httpx
 import pytest
 
@@ -11,38 +9,37 @@ from earthtrend.api.domain.assistant.exchange import ALLOWED_TOOLS, ToolStep, te
 from earthtrend.api.infrastructure.assistant import narrator as narrator_module
 from earthtrend.api.infrastructure.assistant.narrator import (
     DEFAULT_MODEL,
-    AnthropicNarrator,
     FallbackNarrator,
+    OpenRouterNarrator,
     TemplateNarrator,
     narrator_from_env,
     plan_schema,
 )
+from earthtrend.api.infrastructure.shared.openrouter import OpenRouter
 
 CATALOG = {"gldas_sm", "merra2_t2m"}
 
 
-def _response(text: str, stop_reason: str = "end_turn"):
-    return SimpleNamespace(
-        stop_reason=stop_reason,
-        content=[SimpleNamespace(type="thinking", text=""), SimpleNamespace(type="text", text=text)],
-    )
+def _completion(text: str, finish: str = "stop") -> dict:
+    return {"choices": [{"finish_reason": finish, "message": {"content": text}}]}
 
 
-class FakeMessages:
+class FakePost:
     def __init__(self, *replies) -> None:
         self.replies = list(replies)
         self.calls: list[dict] = []
 
-    async def create(self, **kwargs):
-        self.calls.append(kwargs)
+    async def __call__(self, body: dict) -> dict:
+        self.calls.append(body)
         reply = self.replies.pop(0)
         if isinstance(reply, Exception):
             raise reply
         return reply
 
 
-def _client(*replies) -> SimpleNamespace:
-    return SimpleNamespace(beta=SimpleNamespace(messages=FakeMessages(*replies)))
+def _router(*replies, model: str = "anthropic/claude-sonnet-4.5") -> tuple[OpenRouter, FakePost]:
+    post = FakePost(*replies)
+    return OpenRouter("test-key", model, post=post), post
 
 
 async def test_template_plan_reads_variable_and_season_from_question() -> None:
@@ -88,47 +85,51 @@ def test_plan_schema_limits_tools_and_variables() -> None:
     ]
 
 
-async def test_anthropic_plan_uses_structured_output_and_fallbacks() -> None:
+async def test_openrouter_plan_asks_for_the_tool_schema() -> None:
     body = {"steps": [{"tool": "analyze_case", "reason": "тренд", "input": {"variable_id": "gldas_sm"}}]}
-    client = _client(_response(json.dumps(body)))
-    steps = await AnthropicNarrator(client, model="claude-test").plan(
+    router, post = _router(_completion(json.dumps(body)), model="claude-test")
+    steps = await OpenRouterNarrator(router).plan(
         question="q", language="uk", mode="investigate", catalog_ids=CATALOG
     )
     assert steps == [ToolStep("analyze_case", "тренд", {"variable_id": "gldas_sm"})]
-    call = client.beta.messages.calls[0]
+    call = post.calls[0]
     assert call["model"] == "claude-test"
-    assert call["output_config"]["format"]["type"] == "json_schema"
-    assert call["fallbacks"] == "default" and call["betas"] == [narrator_module.FALLBACK_BETA]
+    assert call["response_format"]["type"] == "json_schema"
+    assert call["response_format"]["json_schema"]["schema"]["properties"]["steps"]["items"]["properties"]["tool"]["enum"]
 
 
-async def test_anthropic_answer_picks_system_prompt_by_mode() -> None:
-    client = _client(_response("  Нахил 0.42.  "), _response("Чому?"))
-    model = AnthropicNarrator(client)
+async def test_openrouter_answer_picks_system_prompt_by_mode() -> None:
+    router, post = _router(_completion("  Нахил 0.42.  "), _completion("Чому?"))
+    model = OpenRouterNarrator(router)
     facts = [{"slope_decade": 0.42}]
     assert await model.answer(question="q", language="uk", mode="investigate", facts=facts, case_ids=["c"]) == (
         "Нахил 0.42."
     )
     await model.answer(question="q", language="uk", mode="teach", facts=facts, case_ids=["c"])
-    systems = [call["system"] for call in client.beta.messages.calls]
+    systems = [call["messages"][0]["content"] for call in post.calls]
     assert systems == [narrator_module.SYSTEM_INVESTIGATE, narrator_module.SYSTEM_TEACH]
 
 
-@pytest.mark.parametrize("reply", [_response("x", "refusal"), _response("x", "max_tokens"), _response("  ")])
-async def test_anthropic_rejects_refusal_truncation_and_empty_text(reply) -> None:
+@pytest.mark.parametrize(
+    "reply",
+    [_completion("x", "content_filter"), _completion("x", "length"), _completion("  ")],
+)
+async def test_openrouter_rejects_refusal_truncation_and_empty_text(reply) -> None:
+    router, _post = _router(reply)
     with pytest.raises(ValueError):
-        await AnthropicNarrator(_client(reply)).answer(
+        await OpenRouterNarrator(router).answer(
             question="q", language="uk", mode="investigate", facts=[], case_ids=[]
         )
 
 
-def _api_error() -> anthropic.APIError:
-    request = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
-    return anthropic.APIConnectionError(request=request)
+def _api_error() -> httpx.ConnectError:
+    return httpx.ConnectError("down")
 
 
 async def test_fallback_uses_template_when_model_fails_or_is_missing() -> None:
     template = TemplateNarrator()
-    broken = AnthropicNarrator(_client(_api_error(), _response("not json"), _api_error()))
+    router, _post = _router(_api_error(), _completion("not json"), _api_error())
+    broken = OpenRouterNarrator(router)
     fallback = FallbackNarrator(template, broken)
     planned = await fallback.plan(question="soil", language="en", mode="investigate", catalog_ids=CATALOG)
     assert planned[1].input["variable_id"] == "gldas_sm"
@@ -144,7 +145,8 @@ async def test_fallback_uses_template_when_model_fails_or_is_missing() -> None:
 
 async def test_fallback_returns_model_output_when_it_works() -> None:
     body = {"steps": [{"tool": "get_radar", "reason": "r", "input": {}}]}
-    model = AnthropicNarrator(_client(_response(json.dumps(body)), _response("Готово.")))
+    router, _post = _router(_completion(json.dumps(body)), _completion("Готово."))
+    model = OpenRouterNarrator(router)
     fallback = FallbackNarrator(TemplateNarrator(), model)
     assert [step.tool for step in await fallback.plan(question="q", language="uk", mode="investigate", catalog_ids=CATALOG)] == [
         "get_radar"
@@ -153,11 +155,11 @@ async def test_fallback_returns_model_output_when_it_works() -> None:
 
 
 def test_narrator_from_env(monkeypatch) -> None:
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     assert narrator_from_env()._model is None
 
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
-    monkeypatch.delenv("ANTHROPIC_MODEL", raising=False)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    monkeypatch.delenv("OPENROUTER_MODEL", raising=False)
     assert narrator_from_env()._model._model == DEFAULT_MODEL
-    monkeypatch.setenv("ANTHROPIC_MODEL", "claude-sonnet-5-5")
-    assert narrator_from_env()._model._model == "claude-sonnet-5-5"
+    monkeypatch.setenv("OPENROUTER_MODEL", "anthropic/claude-sonnet-4.5")
+    assert narrator_from_env()._model._model == "anthropic/claude-sonnet-4.5"

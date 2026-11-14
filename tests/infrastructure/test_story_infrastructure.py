@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import os
-from types import SimpleNamespace
 
-import anthropic
 import httpx
 import pytest
 from redis.asyncio import Redis
@@ -17,13 +15,13 @@ from earthtrend.api.infrastructure.cases.memory import MemoryAnalysis, MemoryCas
 from earthtrend.api.infrastructure.cases.wiring import build_case_service
 from earthtrend.api.infrastructure.catalog.memory import seed_catalog
 from earthtrend.api.infrastructure.shared.cache import RedisCache
-from earthtrend.api.infrastructure.story import narrators as narrator_module
+from earthtrend.api.infrastructure.shared.openrouter import OpenRouter
 from earthtrend.api.infrastructure.story.facts import CaseFacts, CatalogStoryCheck
 from earthtrend.api.infrastructure.story.knowledge import pattern_for
 from earthtrend.api.infrastructure.story.narrators import (
     DEFAULT_MODEL,
     ChainNarrator,
-    ClaudeNarrator,
+    OpenRouterNarrator,
     TemplateNarrator,
     narrator_from_env,
 )
@@ -82,74 +80,84 @@ async def test_spec_facts_and_catalog_check() -> None:
     assert pattern_for("unknown", "increasing") == "no_clear_pattern"
 
 
-def _response(text: str, stop_reason: str = "end_turn"):
-    return SimpleNamespace(stop_reason=stop_reason, content=[SimpleNamespace(type="text", text=text)])
+def _completion(text: str, finish: str = "stop") -> dict:
+    return {"choices": [{"finish_reason": finish, "message": {"content": text}}]}
 
 
-class FakeMessages:
+class FakePost:
     def __init__(self, *replies) -> None:
         self.replies = list(replies)
         self.calls: list[dict] = []
 
-    async def create(self, **kwargs):
-        self.calls.append(kwargs)
+    async def __call__(self, body: dict) -> dict:
+        self.calls.append(body)
         reply = self.replies.pop(0)
         if isinstance(reply, Exception):
             raise reply
         return reply
 
 
-def _client(*replies):
-    return SimpleNamespace(beta=SimpleNamespace(messages=FakeMessages(*replies)))
+def _router(*replies, model: str = "anthropic/claude-sonnet-4.5") -> tuple[OpenRouter, FakePost]:
+    post = FakePost(*replies)
+    return OpenRouter("test-key", model, post=post), post
 
 
-async def test_claude_narrator_sends_facts_and_adds_the_causation_caveat() -> None:
-    client = _client(_response("Ґрунт сохне: -0.21 за десятиліття."), _response("Correlation is not causation here."))
-    claude = ClaudeNarrator(client, model="claude-test")
-    draft = await claude.write(language="uk", facts=FACTS)
+async def test_openrouter_narrator_sends_facts_and_adds_the_causation_caveat() -> None:
+    router, post = _router(
+        _completion("Ґрунт сохне: -0.21 за десятиліття."),
+        _completion("Correlation is not causation here."),
+        model="claude-test",
+    )
+    narrator = OpenRouterNarrator(router)
+    draft = await narrator.write(language="uk", facts=FACTS)
     assert draft == Draft("Ґрунт сохне: -0.21 за десятиліття. Кореляція не є причинністю.", "model")
-    call = client.beta.messages.calls[0]
-    assert call["model"] == "claude-test" and call["fallbacks"] == "default"
-    assert "correlation_not_causation" in call["messages"][0]["content"]
-    assert (await claude.write(language="en", facts=FACTS)).text == "Correlation is not causation here."
+    call = post.calls[0]
+    assert call["model"] == "claude-test"
+    assert "correlation_not_causation" in call["messages"][1]["content"]
+    assert (await narrator.write(language="en", facts=FACTS)).text == "Correlation is not causation here."
 
     plain = StoryFacts("v", "r", "increasing", 0.5, "warming")
-    english = await ClaudeNarrator(_client(_response("Warming."))).write(language="en", facts=plain)
+    english_router, _post = _router(_completion("Warming."))
+    english = await OpenRouterNarrator(english_router).write(language="en", facts=plain)
     assert english.text == "Warming."
 
 
-@pytest.mark.parametrize("reply", [_response("x", "refusal"), _response("x", "max_tokens"), _response("  ")])
-async def test_claude_narrator_rejects_unusable_replies(reply) -> None:
+@pytest.mark.parametrize(
+    "reply",
+    [_completion("x", "content_filter"), _completion("x", "length"), _completion("  ")],
+)
+async def test_openrouter_narrator_rejects_unusable_replies(reply) -> None:
+    router, _post = _router(reply)
     with pytest.raises(ValueError):
-        await ClaudeNarrator(_client(reply)).write(language="uk", facts=FACTS)
+        await OpenRouterNarrator(router).write(language="uk", facts=FACTS)
 
 
 async def test_chain_tries_in_order_and_ends_with_the_template() -> None:
-    request = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
-    failing = ClaudeNarrator(_client(anthropic.APIConnectionError(request=request)))
+    router, _post = _router(httpx.ConnectError("down"))
+    failing = OpenRouterNarrator(router)
 
     class M4:
         async def write(self, *, language, facts):
             return Draft("M4 text", "m4")
 
     assert (await ChainNarrator(failing, M4()).write(language="uk", facts=FACTS)).source == "m4"
-    fallback = await ChainNarrator(ClaudeNarrator(_client(_response("", "refusal")))).write(language="en", facts=FACTS)
+    refused, _unused = _router(_completion("x", "content_filter"))
+    fallback = await ChainNarrator(OpenRouterNarrator(refused)).write(language="en", facts=FACTS)
     assert fallback == Draft(template_text(FACTS, "en"), "template")
     assert (await TemplateNarrator().write(language="uk", facts=FACTS)).source == "template"
     assert numbers_in(fallback.text) <= FACTS.allowed_numbers()
 
 
 def test_narrator_from_env(monkeypatch) -> None:
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     assert narrator_from_env()._narrators == ()
     m4 = TemplateNarrator()
     assert narrator_from_env(m4=m4)._narrators == (m4,)
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
-    monkeypatch.delenv("ANTHROPIC_MODEL", raising=False)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    monkeypatch.delenv("OPENROUTER_MODEL", raising=False)
     assert narrator_from_env()._narrators[0]._model == DEFAULT_MODEL
-    monkeypatch.setenv("ANTHROPIC_MODEL", "claude-sonnet-5-5")
-    assert narrator_from_env()._narrators[0]._model == "claude-sonnet-5-5"
-    assert narrator_module.FALLBACK_BETA.startswith("server-side-fallback")
+    monkeypatch.setenv("OPENROUTER_MODEL", "anthropic/claude-sonnet-4.5")
+    assert narrator_from_env()._narrators[0]._model == "anthropic/claude-sonnet-4.5"
 
 
 def test_story_from_env_uses_redis_when_configured(monkeypatch) -> None:
