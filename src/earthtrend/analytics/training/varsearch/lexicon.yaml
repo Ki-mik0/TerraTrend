@@ -1,0 +1,477 @@
+# Training lexicon for the M3 query generator (stage A10).
+#
+# Hand-written synonyms per variable and language, split by register:
+#   plain - how a pupil or a non-specialist would name it
+#   sci   - how a scientist would name it
+# Ukrainian entries may be "nominative|genitive"; templates that need the genitive
+# ("тренд {gen}") only use entries that have it.
+#
+# `phenomena` are whole questions about a phenomenon, each with the set of variables that
+# answer it. They are the "чи стає сухіше" kind of query and are never shown to the human test.
+#
+# This file is training data, not the catalog: catalog keywords go into BM25, this file goes
+# only into generated queries. Keep them overlapping but not identical.
+version: lexicon-v1
+terms:
+  air_temperature_2m:
+    en:
+      plain: [temperature, air temperature, how warm it is, outdoor temperature, warming, heat]
+      sci: [2 m air temperature, near-surface air temperature, surface air temperature, T2M, screen-level temperature]
+    uk:
+      plain: [температура|температури, температура повітря|температури повітря, тепло, потепління|потепління, погодна температура]
+      sci: [приземна температура повітря|приземної температури повітря, температура на 2 м|температури на 2 м, T2M, середньомісячна температура|середньомісячної температури]
+  air_temperature_max:
+    en:
+      plain: [hottest temperature of the day, daytime highs, heat waves, hot days, max temperature]
+      sci: [daily maximum temperature, Tmax, maximum 2 m temperature, T2MMAX]
+    uk:
+      plain: [спека|спеки, найвища температура дня, денна спека, хвилі спеки|хвиль спеки, спекотні дні|спекотних днів]
+      sci: [максимальна добова температура|максимальної добової температури, Tmax, добовий максимум температури|добового максимуму температури]
+  air_temperature_min:
+    en:
+      plain: [coldest temperature of the night, nighttime lows, frosts, cold nights, min temperature]
+      sci: [daily minimum temperature, Tmin, minimum 2 m temperature, T2MMIN]
+    uk:
+      plain: [нічний холод, найнижча температура, заморозки|заморозків, холодні ночі|холодних ночей, нічна температура|нічної температури]
+      sci: [мінімальна добова температура|мінімальної добової температури, Tmin, добовий мінімум температури|добового мінімуму температури]
+  land_surface_temperature_day:
+    en:
+      plain: [how hot the ground gets, ground temperature, hot asphalt, city heat, surface heat from satellite]
+      sci: [daytime land surface temperature, LST day, MODIS LST, skin temperature of land, urban heat island intensity]
+    uk:
+      plain: [температура землі|температури землі, нагрів асфальту|нагріву асфальту, як нагрівається земля, спека в місті]
+      sci: [денна температура поверхні суші|денної температури поверхні суші, LST, MODIS LST, міський острів тепла|міського острова тепла]
+  land_surface_temperature_night:
+    en:
+      plain: [how warm the ground stays at night, night ground temperature, hot nights in the city]
+      sci: [nighttime land surface temperature, LST night, nocturnal surface temperature, nighttime urban heat island]
+    uk:
+      plain: [нічна температура землі|нічної температури землі, теплі ночі в місті, як остигає земля вночі]
+      sci: [нічна температура поверхні суші|нічної температури поверхні суші, нічний LST, нічний острів тепла|нічного острова тепла]
+  surface_skin_temperature:
+    en:
+      plain: [surface temperature, temperature of the surface, top layer temperature]
+      sci: [skin temperature, surface skin temperature, reanalysis TS, radiative surface temperature]
+    uk:
+      plain: [температура поверхні|температури поверхні, температура верхнього шару]
+      sci: [температура підстильної поверхні|температури підстильної поверхні, скін-температура, TS реаналізу]
+  sea_surface_temperature:
+    en:
+      plain: [sea temperature, ocean temperature, how warm the sea is, water temperature, marine heatwaves]
+      sci: [sea surface temperature, SST, ocean surface temperature, SST anomaly]
+    uk:
+      plain: [температура моря|температури моря, тепле море, температура води в морі, температура океану|температури океану]
+      sci: [температура поверхні моря|температури поверхні моря, ТПМ, SST, морські хвилі тепла|морських хвиль тепла]
+  air_temperature_850hpa:
+    en:
+      plain: [temperature high above the ground, temperature in the sky, air temperature aloft]
+      sci: [850 hPa temperature, lower tropospheric temperature, T850, upper-air temperature, vertical temperature profile]
+    uk:
+      plain: [температура високо в небі, температура на висоті|температури на висоті, температура над землею]
+      sci: [температура на 850 гПа|температури на 850 гПа, температура нижньої тропосфери|температури нижньої тропосфери, T850, вертикальний профіль температури|вертикального профілю температури]
+  precipitation_imerg:
+    en:
+      plain: [rain, rainfall, how much it rains, precipitation, wet months]
+      sci: [GPM IMERG precipitation, IMERG rainfall, satellite precipitation, monthly precipitation totals]
+    uk:
+      plain: [дощ|дощу, опади|опадів, кількість дощу|кількості дощу, зливи|злив, скільки випадає дощу]
+      sci: [опади IMERG|опадів IMERG, супутникові опади|супутникових опадів, сума опадів|суми опадів, GPM IMERG]
+  precipitation_gpcp:
+    en:
+      plain: [long-term rainfall, rain since 1980, historical rainfall]
+      sci: [GPCP precipitation, GPCP monthly, merged gauge-satellite precipitation, climate precipitation record]
+    uk:
+      plain: [опади за 40 років, дощі з 1980 року, історичні опади|історичних опадів]
+      sci: [опади GPCP|опадів GPCP, GPCP, кліматичний ряд опадів|кліматичного ряду опадів]
+  snowfall:
+    en:
+      plain: [snowfall, how much snow falls, snowy winters, snow instead of rain]
+      sci: [snowfall rate, solid precipitation, PRECSNO, snow fraction of precipitation]
+    uk:
+      plain: [снігопади|снігопадів, скільки снігу випадає, сніжні зими|сніжних зим, сніг замість дощу]
+      sci: [тверді опади|твердих опадів, інтенсивність снігопаду|інтенсивності снігопаду, PRECSNO]
+  snow_cover:
+    en:
+      plain: [snow on the ground, how long snow lies, snowy area, white winters]
+      sci: [snow cover fraction, snow cover extent, snow cover duration, MOD10CM]
+    uk:
+      plain: [сніг на землі, скільки лежить сніг, площа снігу|площі снігу, біла зима]
+      sci: [сніговий покрив|снігового покриву, частка снігового покриву|частки снігового покриву, тривалість залягання снігу|тривалості залягання снігу]
+  snow_water_equivalent:
+    en:
+      plain: [how much water is in the snow, snowpack, snow depth, snow melt water]
+      sci: [snow water equivalent, SWE, snowpack water storage]
+    uk:
+      plain: [запаси снігу|запасів снігу, скільки води в снігу, висота снігу|висоти снігу, талі води|талих вод]
+      sci: [водний еквівалент снігу|водного еквівалента снігу, SWE, снігозапаси|снігозапасів]
+  soil_moisture_surface:
+    en:
+      plain: [soil moisture, how wet the soil is, dry soil, ground dryness, drought in fields]
+      sci: [surface soil moisture, SMAP soil moisture, volumetric soil water content, top 5 cm soil moisture]
+    uk:
+      plain: [вологість ґрунту|вологості ґрунту, сухий ґрунт|сухого ґрунту, волога в землі, посуха на полях|посухи на полях]
+      sci: [вологість поверхневого шару ґрунту|вологості поверхневого шару ґрунту, SMAP, об'ємна вологість ґрунту|об'ємної вологості ґрунту]
+  soil_moisture_root_zone:
+    en:
+      plain: [water deep in the soil, water for plant roots, deep soil dryness]
+      sci: [root zone soil moisture, root-zone water content, GLDAS soil moisture, subsurface soil moisture]
+    uk:
+      plain: [вода глибоко в ґрунті, волога для коренів, глибока посуха|глибокої посухи]
+      sci: [вологість кореневої зони|вологості кореневої зони, вологість метрового шару ґрунту|вологості метрового шару ґрунту, GLDAS]
+  evapotranspiration:
+    en:
+      plain: [evaporation, water evaporating from land, how much water plants release]
+      sci: [evapotranspiration, actual evapotranspiration, latent heat flux, ET]
+    uk:
+      plain: [випаровування|випаровування, скільки води випаровується, вода, яку віддають рослини]
+      sci: [евапотранспірація|евапотранспірації, сумарне випаровування|сумарного випаровування, фактичне випаровування|фактичного випаровування]
+  potential_evapotranspiration:
+    en:
+      plain: [how thirsty the air is, drying power of the air, aridity]
+      sci: [potential evapotranspiration, PET, atmospheric evaporative demand, reference evapotranspiration]
+    uk:
+      plain: [спрага повітря, посушливість|посушливості, наскільки повітря висушує]
+      sci: [потенційне випаровування|потенційного випаровування, випаровуваність|випаровуваності, потенційна евапотранспірація|потенційної евапотранспірації]
+  runoff:
+    en:
+      plain: [water flowing into rivers, floods, river water, runoff]
+      sci: [surface runoff, overland flow, Qs, runoff generation]
+    uk:
+      plain: [вода в річках, повені|повеней, паводки|паводків, стік води|стоку води]
+      sci: [поверхневий стік|поверхневого стоку, схиловий стік|схилового стоку, Qs]
+  terrestrial_water_storage:
+    en:
+      plain: [groundwater, underground water, water reserves, wells drying up]
+      sci: [terrestrial water storage, TWS anomaly, GRACE, liquid water equivalent thickness, groundwater depletion]
+    uk:
+      plain: [підземні води|підземних вод, запаси води|запасів води, вода під землею, пересихання колодязів]
+      sci: [запаси води на суші|запасів води на суші, аномалія TWS|аномалії TWS, GRACE, виснаження підземних вод|виснаження підземних вод]
+  relative_humidity:
+    en:
+      plain: [humidity, how humid it is, dry air, muggy weather]
+      sci: [relative humidity, near-surface relative humidity, RH, AIRS humidity]
+    uk:
+      plain: [вологість|вологості, вологість повітря|вологості повітря, сухе повітря|сухого повітря, задуха|задухи]
+      sci: [відносна вологість|відносної вологості, відносна вологість повітря|відносної вологості повітря, RH]
+  specific_humidity:
+    en:
+      plain: [water vapour in the air, moisture in the air, amount of vapour]
+      sci: [specific humidity, QV2M, mixing ratio, near-surface specific humidity]
+    uk:
+      plain: [водяна пара в повітрі|водяної пари в повітрі, волога в повітрі, кількість пари]
+      sci: [питома вологість|питомої вологості, вологовміст повітря|вологовмісту повітря, QV2M]
+  total_precipitable_water:
+    en:
+      plain: [water vapour in the whole sky, moisture in the atmosphere, how much water the air holds]
+      sci: [total precipitable water, column water vapour, integrated water vapour, TQV, PWV]
+    uk:
+      plain: [вода в атмосфері, вологість атмосфери|вологості атмосфери, скільки води тримає повітря]
+      sci: [вміст водяної пари в стовпі|вмісту водяної пари в стовпі, інтегральна волога|інтегральної вологи, TQV]
+  cloud_fraction:
+    en:
+      plain: [clouds, cloudiness, cloudy days, cloud cover, overcast sky]
+      sci: [cloud fraction, total cloud cover, MODIS cloud fraction, cloud amount]
+    uk:
+      plain: [хмари|хмар, хмарність|хмарності, похмурі дні|похмурих днів, хмарне небо|хмарного неба]
+      sci: [частка хмарності|частки хмарності, загальна хмарність|загальної хмарності, кількість хмар|кількості хмар]
+  ndvi:
+    en:
+      plain: [greenness, how green plants are, vegetation, green cover, forest greenness]
+      sci: [NDVI, normalized difference vegetation index, vegetation index, MODIS NDVI]
+    uk:
+      plain: [зеленість|зеленості, рослинність|рослинності, зелень|зелені, зеленість лісів|зеленості лісів, наскільки зелені рослини]
+      sci: [NDVI, вегетаційний індекс|вегетаційного індексу, нормалізований вегетаційний індекс|нормалізованого вегетаційного індексу]
+  evi:
+    en:
+      plain: [greenness of dense forest, jungle greenness, crop greenness]
+      sci: [EVI, enhanced vegetation index, MODIS EVI]
+    uk:
+      plain: [зеленість густого лісу|зеленості густого лісу, зеленість посівів|зеленості посівів]
+      sci: [EVI, покращений вегетаційний індекс|покращеного вегетаційного індексу]
+  leaf_area_index:
+    en:
+      plain: [amount of leaves, how leafy trees are, foliage]
+      sci: [leaf area index, LAI, MODIS LAI, canopy leaf area]
+    uk:
+      plain: [кількість листя|кількості листя, облистненість|облистненості, листя на деревах]
+      sci: [індекс листкової поверхні|індексу листкової поверхні, LAI, листковий індекс|листкового індексу]
+  fpar:
+    en:
+      plain: [light absorbed by plants, sunlight used by leaves]
+      sci: [FPAR, fraction of absorbed photosynthetically active radiation, fAPAR]
+    uk:
+      plain: [світло, яке поглинають рослини, сонце для листя]
+      sci: [FPAR, частка поглиненої ФАР|частки поглиненої ФАР, фАПАР]
+  gross_primary_productivity:
+    en:
+      plain: [plant growth, how much carbon plants absorb, crop productivity, harvest potential]
+      sci: [gross primary productivity, GPP, photosynthetic carbon uptake, MODIS GPP]
+    uk:
+      plain: [ріст рослин|росту рослин, скільки вуглецю поглинають рослини, продуктивність полів|продуктивності полів, врожай|врожаю]
+      sci: [валова первинна продуктивність|валової первинної продуктивності, GPP, фотосинтетичне поглинання вуглецю|фотосинтетичного поглинання вуглецю]
+  fire_count:
+    en:
+      plain: [wildfires, forest fires, fires, burning fields, number of fires]
+      sci: [active fire detections, fire hotspots, MODIS fire counts, thermal anomalies]
+    uk:
+      plain: [пожежі|пожеж, лісові пожежі|лісових пожеж, горять поля, кількість пожеж|кількості пожеж, підпали трави|підпалів трави]
+      sci: [активні пожежі|активних пожеж, осередки пожеж|осередків пожеж, термальні аномалії|термальних аномалій]
+  burned_area:
+    en:
+      plain: [burnt land, area burned, fire damage, scorched land]
+      sci: [burned area, burnt area, MCD64A1, fire scar area]
+    uk:
+      plain: [згарища|згарищ, вигоріла земля|вигорілої землі, скільки землі згоріло]
+      sci: [площа згарищ|площі згарищ, вигоріла площа|вигорілої площі, MCD64A1]
+  aerosol_optical_depth:
+    en:
+      plain: [haze, smog, hazy sky, dirty air, air pollution from space]
+      sci: [aerosol optical depth, AOD, aerosol optical thickness, AOD 550 nm]
+    uk:
+      plain: [серпанок|серпанку, смог|смогу, каламутне небо, брудне повітря, забруднення повітря|забруднення повітря]
+      sci: [аерозольна оптична товща|аерозольної оптичної товщі, AOD, оптична товща аерозолю|оптичної товщі аерозолю]
+  pm25:
+    en:
+      plain: [air pollution, air quality, fine dust we breathe, smog particles]
+      sci: [PM2.5, fine particulate matter, surface PM2.5 concentration, particulate pollution]
+    uk:
+      plain: [забруднення повітря|забруднення повітря, якість повітря|якості повітря, дрібний пил|дрібного пилу, чим ми дихаємо]
+      sci: [PM2.5, дрібнодисперсні частинки|дрібнодисперсних частинок, концентрація PM2.5|концентрації PM2.5, тверді частинки|твердих частинок]
+  nitrogen_dioxide:
+    en:
+      plain: [traffic pollution, car exhaust, pollution from cars and factories]
+      sci: [NO2, nitrogen dioxide, tropospheric NO2 column, OMI NO2]
+    uk:
+      plain: [вихлопи машин|вихлопів машин, забруднення від транспорту|забруднення від транспорту, викиди заводів|викидів заводів]
+      sci: [NO2, діоксид азоту|діоксиду азоту, тропосферний NO2|тропосферного NO2, двоокис азоту|двоокису азоту]
+  sulfur_dioxide:
+    en:
+      plain: [volcano gas, coal smoke, acid rain gas]
+      sci: [SO2, sulfur dioxide, SO2 column, OMI SO2]
+    uk:
+      plain: [вулканічний газ|вулканічного газу, дим від вугілля, кислотні дощі|кислотних дощів]
+      sci: [SO2, діоксид сірки|діоксиду сірки, сірчистий газ|сірчистого газу]
+  total_ozone:
+    en:
+      plain: [ozone layer, ozone hole, ozone]
+      sci: [total column ozone, total ozone, stratospheric ozone, Dobson units]
+    uk:
+      plain: [озоновий шар|озонового шару, озонова діра|озонової діри, озон|озону]
+      sci: [загальний вміст озону|загального вмісту озону, стратосферний озон|стратосферного озону, одиниці Добсона]
+  carbon_monoxide:
+    en:
+      plain: [carbon monoxide, smoke gas, fire smoke pollution]
+      sci: [CO, CO total column, MOPITT CO, carbon monoxide column]
+    uk:
+      plain: [чадний газ|чадного газу, димовий газ, чад|чаду]
+      sci: [CO, монооксид вуглецю|монооксиду вуглецю, MOPITT]
+  carbon_dioxide:
+    en:
+      plain: [CO2, greenhouse gas, carbon emissions, carbon in the air]
+      sci: [XCO2, column-averaged CO2, OCO-2 CO2, atmospheric carbon dioxide]
+    uk:
+      plain: [вуглекислий газ|вуглекислого газу, CO2, парникові гази|парникових газів, викиди вуглецю|викидів вуглецю]
+      sci: [XCO2, діоксид вуглецю|діоксиду вуглецю, CO2 за OCO-2]
+  methane:
+    en:
+      plain: [methane, gas leaks, cow emissions, swamp gas]
+      sci: [CH4, atmospheric methane, methane column, AIRS methane]
+    uk:
+      plain: [метан|метану, витоки газу|витоків газу, болотний газ|болотного газу]
+      sci: [CH4, атмосферний метан|атмосферного метану, вміст метану|вмісту метану]
+  dust_aod:
+    en:
+      plain: [dust storms, dust in the air, Saharan dust, sandstorms]
+      sci: [dust aerosol optical depth, dust AOD, DUEXTTAU, mineral dust]
+    uk:
+      plain: [пилові бурі|пилових бур, пил у повітрі, сахарський пил|сахарського пилу, піщані бурі|піщаних бур]
+      sci: [оптична товща пилу|оптичної товщі пилу, пиловий аерозоль|пилового аерозолю, DUEXTTAU]
+  black_carbon:
+    en:
+      plain: [soot, smoke particles, diesel smoke]
+      sci: [black carbon, BC surface mass concentration, BCSMASS, elemental carbon]
+    uk:
+      plain: [сажа|сажі, кіптява|кіптяви, дизельний дим]
+      sci: [чорний вуглець|чорного вуглецю, концентрація сажі|концентрації сажі, BCSMASS]
+  formaldehyde:
+    en:
+      plain: [formaldehyde, organic pollution gas]
+      sci: [HCHO, formaldehyde column, VOC proxy]
+    uk:
+      plain: [формальдегід|формальдегіду, органічні забруднювачі|органічних забруднювачів]
+      sci: [HCHO, вміст формальдегіду|вмісту формальдегіду, леткі органічні сполуки|летких органічних сполук]
+  shortwave_radiation_surface:
+    en:
+      plain: [sunshine, sunlight, how sunny it is, solar energy, sun for solar panels]
+      sci: [surface downwelling shortwave radiation, SWGDN, global horizontal irradiance, insolation]
+    uk:
+      plain: [сонце|сонця, сонячне світло|сонячного світла, скільки сонця, сонячна енергія|сонячної енергії]
+      sci: [сонячна радіація|сонячної радіації, сумарна радіація|сумарної радіації, інсоляція|інсоляції, короткохвильова радіація|короткохвильової радіації]
+  outgoing_longwave_radiation:
+    en:
+      plain: [heat Earth sends to space, infrared from Earth]
+      sci: [outgoing longwave radiation, OLR, TOA longwave flux, CERES longwave]
+    uk:
+      plain: [тепло, яке Земля віддає в космос, інфрачервоне світло Землі]
+      sci: [вихідне довгохвильове випромінювання|вихідного довгохвильового випромінювання, OLR, довгохвильовий потік|довгохвильового потоку]
+  surface_albedo:
+    en:
+      plain: [how much sunlight is reflected, surface brightness, reflectivity]
+      sci: [surface albedo, broadband albedo, ALBEDO]
+    uk:
+      plain: [скільки світла відбивається, світлість поверхні, відбиття сонця|відбиття сонця]
+      sci: [альбедо|альбедо, альбедо поверхні|альбедо поверхні, відбивна здатність|відбивної здатності]
+  uv_index:
+    en:
+      plain: [UV, sunburn risk, ultraviolet, sun strength]
+      sci: [UV index, erythemal UV, OMI UV index]
+    uk:
+      plain: [ультрафіолет|ультрафіолету, ризик опіків, УФ]
+      sci: [УФ-індекс|УФ-індексу, ультрафіолетовий індекс|ультрафіолетового індексу, еритемне УФ]
+  wind_speed_10m:
+    en:
+      plain: [wind, how windy it is, strong winds, wind power potential]
+      sci: [10 m wind speed, near-surface wind speed, U10 V10, surface winds]
+    uk:
+      plain: [вітер|вітру, сильний вітер|сильного вітру, наскільки вітряно, вітрова енергія|вітрової енергії]
+      sci: [швидкість вітру|швидкості вітру, швидкість вітру на 10 м|швидкості вітру на 10 м, приземний вітер|приземного вітру]
+  sea_level_pressure:
+    en:
+      plain: [air pressure, barometer readings, cyclones and anticyclones]
+      sci: [sea level pressure, mean sea level pressure, SLP, MSLP]
+    uk:
+      plain: [тиск|тиску, атмосферний тиск|атмосферного тиску, барометр|барометра, циклони|циклонів]
+      sci: [тиск на рівні моря|тиску на рівні моря, приземний тиск|приземного тиску, SLP]
+  geopotential_height_500hpa:
+    en:
+      plain: [jet stream, weather blocking, high altitude pressure]
+      sci: [500 hPa geopotential height, Z500, geopotential height, mid-tropospheric circulation]
+    uk:
+      plain: [струминна течія|струминної течії, блокування погоди, висотний тиск]
+      sci: [геопотенціальна висота 500 гПа|геопотенціальної висоти 500 гПа, Z500, геопотенціал|геопотенціалу]
+  boundary_layer_height:
+    en:
+      plain: [mixing of air near the ground, temperature inversion, stagnant air]
+      sci: [planetary boundary layer height, PBLH, mixing layer height]
+    uk:
+      plain: [застій повітря|застою повітря, інверсія|інверсії, перемішування повітря|перемішування повітря]
+      sci: [висота пограничного шару|висоти пограничного шару, PBLH, шар перемішування|шару перемішування]
+  lightning_flash_rate:
+    en:
+      plain: [lightning, thunderstorms, thunder and lightning]
+      sci: [lightning flash rate, flash density, LIS lightning]
+    uk:
+      plain: [блискавки|блискавок, грози|гроз, гроза|грози]
+      sci: [частота блискавок|частоти блискавок, щільність спалахів|щільності спалахів, грозова активність|грозової активності]
+  sea_ice_concentration:
+    en:
+      plain: [sea ice, Arctic ice, melting ice in the ocean, polar ice]
+      sci: [sea ice concentration, sea ice extent, ice fraction, NSIDC sea ice]
+    uk:
+      plain: [морський лід|морського льоду, лід в Арктиці, танення льоду|танення льоду, полярний лід|полярного льоду]
+      sci: [зімкнутість морського льоду|зімкнутості морського льоду, площа морського льоду|площі морського льоду, льодовитість|льодовитості]
+  chlorophyll_a:
+    en:
+      plain: [algae in the sea, green water, plankton, algal blooms]
+      sci: [chlorophyll-a concentration, chlor_a, ocean colour, phytoplankton biomass]
+    uk:
+      plain: [водорості в морі, цвітіння води|цвітіння води, планктон|планктону, зелена вода]
+      sci: [концентрація хлорофілу|концентрації хлорофілу, хлорофіл-a|хлорофілу-a, біомаса фітопланктону|біомаси фітопланктону]
+  sea_surface_height_anomaly:
+    en:
+      plain: [sea level, rising seas, ocean level, coastal flooding risk]
+      sci: [sea surface height anomaly, SSHA, satellite altimetry, sea level rise rate]
+    uk:
+      plain: [рівень моря|рівня моря, підйом моря|підйому моря, затоплення узбережжя|затоплення узбережжя]
+      sci: [аномалія висоти поверхні моря|аномалії висоти поверхні моря, альтиметрія|альтиметрії, швидкість підйому рівня моря|швидкості підйому рівня моря]
+  sea_surface_salinity:
+    en:
+      plain: [how salty the sea is, salt in the ocean, sea saltiness]
+      sci: [sea surface salinity, SSS, SMAP salinity, practical salinity]
+    uk:
+      plain: [солоність моря|солоності моря, сіль у морі, наскільки солоне море]
+      sci: [солоність поверхні моря|солоності поверхні моря, SSS, практична солоність|практичної солоності]
+  night_lights:
+    en:
+      plain: [city lights at night, lights from space, blackouts, light pollution]
+      sci: [nighttime lights, VIIRS night lights, Black Marble radiance, artificial light at night]
+    uk:
+      plain: [нічні вогні|нічних вогнів, світло міст вночі, блекаути|блекаутів, світлове забруднення|світлового забруднення]
+      sci: [нічне освітлення|нічного освітлення, VIIRS, Black Marble, штучне світло вночі]
+
+phenomena:
+  en:
+    - {text: is it getting hotter, relevant: [air_temperature_2m, air_temperature_max]}
+    - {text: are summers getting hotter, relevant: [air_temperature_max, air_temperature_2m]}
+    - {text: are winters getting milder, relevant: [air_temperature_2m, air_temperature_min, snowfall]}
+    - {text: fewer frosty nights, relevant: [air_temperature_min]}
+    - {text: is the city hotter than the countryside, relevant: [land_surface_temperature_day, land_surface_temperature_night]}
+    - {text: is it getting drier, relevant: [soil_moisture_surface, precipitation_imerg, precipitation_gpcp, soil_moisture_root_zone]}
+    - {text: more droughts for farmers, relevant: [soil_moisture_surface, soil_moisture_root_zone, precipitation_imerg]}
+    - {text: does it rain more than before, relevant: [precipitation_imerg, precipitation_gpcp]}
+    - {text: less snow in winter, relevant: [snow_cover, snowfall, snow_water_equivalent]}
+    - {text: will rivers flood in spring, relevant: [snow_water_equivalent, runoff]}
+    - {text: are we running out of groundwater, relevant: [terrestrial_water_storage]}
+    - {text: is the air more humid, relevant: [relative_humidity, specific_humidity]}
+    - {text: are there more cloudy days, relevant: [cloud_fraction]}
+    - {text: are forests getting greener, relevant: [ndvi, evi, leaf_area_index]}
+    - {text: do plants start growing earlier in spring, relevant: [ndvi, evi, leaf_area_index]}
+    - {text: are crops doing worse, relevant: [gross_primary_productivity, ndvi, evi]}
+    - {text: more wildfires than before, relevant: [fire_count, burned_area]}
+    - {text: how much forest burned, relevant: [burned_area, fire_count]}
+    - {text: is the air getting dirtier, relevant: [pm25, aerosol_optical_depth, nitrogen_dioxide]}
+    - {text: did lockdown clean the air, relevant: [nitrogen_dioxide, pm25]}
+    - {text: smoke from fires in the air, relevant: [carbon_monoxide, black_carbon, aerosol_optical_depth]}
+    - {text: is the ozone hole healing, relevant: [total_ozone]}
+    - {text: is CO2 still rising, relevant: [carbon_dioxide]}
+    - {text: more greenhouse gases, relevant: [carbon_dioxide, methane]}
+    - {text: dust coming from the Sahara, relevant: [dust_aod]}
+    - {text: is it getting sunnier, relevant: [shortwave_radiation_surface, cloud_fraction]}
+    - {text: is it windier now, relevant: [wind_speed_10m]}
+    - {text: more thunderstorms, relevant: [lightning_flash_rate]}
+    - {text: is Arctic ice disappearing, relevant: [sea_ice_concentration]}
+    - {text: is the sea getting warmer, relevant: [sea_surface_temperature]}
+    - {text: are seas rising, relevant: [sea_surface_height_anomaly]}
+    - {text: more algae blooms in the sea, relevant: [chlorophyll_a]}
+    - {text: did the war cause blackouts, relevant: [night_lights]}
+    - {text: are cities growing, relevant: [night_lights]}
+    - {text: is snow darker because of soot, relevant: [black_carbon, surface_albedo]}
+    - {text: higher risk of sunburn, relevant: [uv_index]}
+  uk:
+    - {text: чи стає спекотніше, relevant: [air_temperature_2m, air_temperature_max]}
+    - {text: чи теплішає, relevant: [air_temperature_2m]}
+    - {text: літо стає спекотнішим, relevant: [air_temperature_max, air_temperature_2m]}
+    - {text: чи стали зими м'якшими, relevant: [air_temperature_2m, air_temperature_min, snowfall]}
+    - {text: менше заморозків, relevant: [air_temperature_min]}
+    - {text: чи в місті спекотніше ніж за містом, relevant: [land_surface_temperature_day, land_surface_temperature_night]}
+    - {text: чи стає сухіше, relevant: [soil_moisture_surface, precipitation_imerg, precipitation_gpcp, soil_moisture_root_zone]}
+    - {text: частіші посухи на полях, relevant: [soil_moisture_surface, soil_moisture_root_zone, precipitation_imerg]}
+    - {text: чи стало більше дощів, relevant: [precipitation_imerg, precipitation_gpcp]}
+    - {text: взимку менше снігу, relevant: [snow_cover, snowfall, snow_water_equivalent]}
+    - {text: чи буде весняна повінь, relevant: [snow_water_equivalent, runoff]}
+    - {text: чи зникають підземні води, relevant: [terrestrial_water_storage]}
+    - {text: чи стало повітря вологішим, relevant: [relative_humidity, specific_humidity]}
+    - {text: чи стало більше хмарних днів, relevant: [cloud_fraction]}
+    - {text: чи зеленіють ліси, relevant: [ndvi, evi, leaf_area_index]}
+    - {text: чи раніше прокидається природа навесні, relevant: [ndvi, evi, leaf_area_index]}
+    - {text: чи гірший врожай, relevant: [gross_primary_productivity, ndvi, evi]}
+    - {text: чи більше стало пожеж, relevant: [fire_count, burned_area]}
+    - {text: скільки лісу згоріло, relevant: [burned_area, fire_count]}
+    - {text: чи брудніше стало повітря, relevant: [pm25, aerosol_optical_depth, nitrogen_dioxide]}
+    - {text: чи очистилося повітря під час карантину, relevant: [nitrogen_dioxide, pm25]}
+    - {text: дим від пожеж у повітрі, relevant: [carbon_monoxide, black_carbon, aerosol_optical_depth]}
+    - {text: чи затягується озонова діра, relevant: [total_ozone]}
+    - {text: чи далі росте CO2, relevant: [carbon_dioxide]}
+    - {text: більше парникових газів, relevant: [carbon_dioxide, methane]}
+    - {text: пил із Сахари, relevant: [dust_aod]}
+    - {text: чи стало більше сонця, relevant: [shortwave_radiation_surface, cloud_fraction]}
+    - {text: чи стало вітряніше, relevant: [wind_speed_10m]}
+    - {text: частіші грози, relevant: [lightning_flash_rate]}
+    - {text: чи тане лід в Арктиці, relevant: [sea_ice_concentration]}
+    - {text: чи нагрівається море, relevant: [sea_surface_temperature]}
+    - {text: чи піднімається рівень моря, relevant: [sea_surface_height_anomaly]}
+    - {text: цвітіння Чорного моря, relevant: [chlorophyll_a]}
+    - {text: блекаути через війну, relevant: [night_lights]}
+    - {text: чи ростуть міста, relevant: [night_lights]}
+    - {text: чи темніє сніг через сажу, relevant: [black_carbon, surface_albedo]}
+    - {text: чи вищий ризик сонячних опіків, relevant: [uv_index]}

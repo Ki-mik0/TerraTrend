@@ -1,0 +1,717 @@
+{
+  "fingerprint": "0e3ad8ca7894a426",
+  "ruleset": "verdict_rules_v1",
+  "analytics_version": "0.1.0",
+  "generated_utc": "2026-11-14T13:14:57+00:00",
+  "python": "3.12.10",
+  "runs": {
+    "method": 10000,
+    "verdict": 1000,
+    "power": 1000
+  },
+  "thresholds": {
+    "config": {
+      "ALPHA": 0.05,
+      "STABLE_MASK_MIN_VALID": 0.8,
+      "MONTH_MIN_COVERAGE": 0.7,
+      "LOW_STABLE_FRACTION": 0.5,
+      "MAX_GAP_SHARE": 0.2,
+      "DEFAULT_MIN_YEARS": 10,
+      "OUTLIER_Z": 5.0,
+      "ANNUAL_MIN_MONTHS": 10,
+      "N_EFF_MIN": 3.0,
+      "N_EFF_UNRELIABLE": 8.0,
+      "SNR_MODERATE": 0.2,
+      "SNR_STRONG": 0.5,
+      "MK_CONFIRM_P": 0.2
+    },
+    "triangle": [
+      0.1,
+      0.9,
+      0.6,
+      0.7
+    ],
+    "quality": [
+      0.01,
+      [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      6,
+      0.1,
+      [
+        "low_stable_coverage",
+        "many_gaps",
+        "possible_artifact"
+      ],
+      [
+        "influential_year",
+        "long_memory",
+        "low_n_eff",
+        "outliers",
+        "possible_artifact_edge"
+      ]
+    ],
+    "alibi": [
+      [
+        0,
+        2,
+        4,
+        6
+      ],
+      5,
+      0.3,
+      0.8
+    ],
+    "protocol": [
+      0.2
+    ],
+    "jackknife": [
+      0.3
+    ],
+    "mann_kendall": [
+      199.0,
+      1000000000.0
+    ],
+    "nonlinear": [
+      4.0,
+      1.96
+    ]
+  },
+  "null_scenarios": [
+    {
+      "scenario": {
+        "name": "ar1_phi0.0",
+        "kind": "ar1",
+        "phi": 0.0,
+        "n_years": 40,
+        "slope_per_decade": 0.0,
+        "step": null,
+        "gap_fraction": 0.0
+      },
+      "false_alarm": {
+        "decision": {
+          "rate": 0.0429,
+          "ci95": [
+            0.0391,
+            0.0471
+          ]
+        },
+        "ols_annual": {
+          "rate": 0.0429,
+          "ci95": [
+            0.0391,
+            0.0471
+          ]
+        },
+        "ols": {
+          "rate": 0.0473,
+          "ci95": [
+            0.0433,
+            0.0516
+          ]
+        },
+        "mk": {
+          "rate": 0.0484,
+          "ci95": [
+            0.0444,
+            0.0528
+          ]
+        }
+      },
+      "verdicts": {
+        "proven": 0.0,
+        "strong": 0.002,
+        "likely": 0.034,
+        "suspicious": 0.188,
+        "no_evidence": 0.776,
+        "inadmissible": 0.0
+      }
+    },
+    {
+      "scenario": {
+        "name": "ar1_phi0.3",
+        "kind": "ar1",
+        "phi": 0.3,
+        "n_years": 40,
+        "slope_per_decade": 0.0,
+        "step": null,
+        "gap_fraction": 0.0
+      },
+      "false_alarm": {
+        "decision": {
+          "rate": 0.05,
+          "ci95": [
+            0.0459,
+            0.0544
+          ]
+        },
+        "ols_annual": {
+          "rate": 0.05,
+          "ci95": [
+            0.0459,
+            0.0544
+          ]
+        },
+        "ols": {
+          "rate": 0.0551,
+          "ci95": [
+            0.0508,
+            0.0597
+          ]
+        },
+        "mk": {
+          "rate": 0.0567,
+          "ci95": [
+            0.0523,
+            0.0614
+          ]
+        }
+      },
+      "verdicts": {
+        "proven": 0.0,
+        "strong": 0.001,
+        "likely": 0.035,
+        "suspicious": 0.184,
+        "no_evidence": 0.78,
+        "inadmissible": 0.0
+      }
+    },
+    {
+      "scenario": {
+        "name": "ar1_phi0.6",
+        "kind": "ar1",
+        "phi": 0.6,
+        "n_years": 40,
+        "slope_per_decade": 0.0,
+        "step": null,
+        "gap_fraction": 0.0
+      },
+      "false_alarm": {
+        "decision": {
+          "rate": 0.0541,
+          "ci95": [
+            0.0498,
+            0.0587
+          ]
+        },
+        "ols_annual": {
+          "rate": 0.0541,
+          "ci95": [
+            0.0498,
+            0.0587
+          ]
+        },
+        "ols": {
+          "rate": 0.0561,
+          "ci95": [
+            0.0518,
+            0.0608
+          ]
+        },
+        "mk": {
+          "rate": 0.0574,
+          "ci95": [
+            0.053,
+            0.0621
+          ]
+        }
+      },
+      "verdicts": {
+        "proven": 0.0,
+        "strong": 0.0,
+        "likely": 0.054,
+        "suspicious": 0.186,
+        "no_evidence": 0.76,
+        "inadmissible": 0.0
+      }
+    },
+    {
+      "scenario": {
+        "name": "ar1_phi0.8",
+        "kind": "ar1",
+        "phi": 0.8,
+        "n_years": 40,
+        "slope_per_decade": 0.0,
+        "step": null,
+        "gap_fraction": 0.0
+      },
+      "false_alarm": {
+        "decision": {
+          "rate": 0.0571,
+          "ci95": [
+            0.0527,
+            0.0618
+          ]
+        },
+        "ols_annual": {
+          "rate": 0.0571,
+          "ci95": [
+            0.0527,
+            0.0618
+          ]
+        },
+        "ols": {
+          "rate": 0.0524,
+          "ci95": [
+            0.0482,
+            0.0569
+          ]
+        },
+        "mk": {
+          "rate": 0.0611,
+          "ci95": [
+            0.0566,
+            0.066
+          ]
+        }
+      },
+      "verdicts": {
+        "proven": 0.0,
+        "strong": 0.005,
+        "likely": 0.056,
+        "suspicious": 0.183,
+        "no_evidence": 0.756,
+        "inadmissible": 0.0
+      }
+    },
+    {
+      "scenario": {
+        "name": "ar1_phi0.5_gaps15",
+        "kind": "ar1",
+        "phi": 0.5,
+        "n_years": 40,
+        "slope_per_decade": 0.0,
+        "step": null,
+        "gap_fraction": 0.15
+      },
+      "false_alarm": {
+        "decision": {
+          "rate": 0.0381,
+          "ci95": [
+            0.0345,
+            0.042
+          ]
+        },
+        "ols_annual": {
+          "rate": 0.0434,
+          "ci95": [
+            0.0396,
+            0.0476
+          ]
+        },
+        "ols": {
+          "rate": 0.0452,
+          "ci95": [
+            0.0413,
+            0.0494
+          ]
+        },
+        "mk": {
+          "rate": 0.0567,
+          "ci95": [
+            0.0523,
+            0.0614
+          ]
+        }
+      },
+      "verdicts": {
+        "proven": 0.0,
+        "strong": 0.004,
+        "likely": 0.024,
+        "suspicious": 0.251,
+        "no_evidence": 0.721,
+        "inadmissible": 0.0
+      }
+    },
+    {
+      "scenario": {
+        "name": "skewed_gamma_phi0.4",
+        "kind": "skewed",
+        "phi": 0.4,
+        "n_years": 40,
+        "slope_per_decade": 0.0,
+        "step": null,
+        "gap_fraction": 0.0
+      },
+      "false_alarm": {
+        "decision": {
+          "rate": 0.0602,
+          "ci95": [
+            0.0557,
+            0.065
+          ]
+        },
+        "ols_annual": {
+          "rate": 0.0471,
+          "ci95": [
+            0.0431,
+            0.0514
+          ]
+        },
+        "ols": {
+          "rate": 0.0558,
+          "ci95": [
+            0.0515,
+            0.0605
+          ]
+        },
+        "mk": {
+          "rate": 0.0602,
+          "ci95": [
+            0.0557,
+            0.065
+          ]
+        }
+      },
+      "verdicts": {
+        "proven": 0.0,
+        "strong": 0.0,
+        "likely": 0.055,
+        "suspicious": 0.33,
+        "no_evidence": 0.615,
+        "inadmissible": 0.0
+      }
+    },
+    {
+      "scenario": {
+        "name": "iaaft_synthetic_long_memory",
+        "kind": "iaaft",
+        "phi": 0.5,
+        "n_years": 40,
+        "slope_per_decade": 0.0,
+        "step": null,
+        "gap_fraction": 0.0
+      },
+      "false_alarm": {
+        "decision": {
+          "rate": 0.0513,
+          "ci95": [
+            0.0471,
+            0.0558
+          ]
+        },
+        "ols_annual": {
+          "rate": 0.0513,
+          "ci95": [
+            0.0471,
+            0.0558
+          ]
+        },
+        "ols": {
+          "rate": 0.111,
+          "ci95": [
+            0.105,
+            0.1173
+          ]
+        },
+        "mk": {
+          "rate": 0.1095,
+          "ci95": [
+            0.1035,
+            0.1158
+          ]
+        }
+      },
+      "verdicts": {
+        "proven": 0.0,
+        "strong": 0.005,
+        "likely": 0.038,
+        "suspicious": 0.256,
+        "no_evidence": 0.701,
+        "inadmissible": 0.0
+      }
+    },
+    {
+      "scenario": {
+        "name": "witness_shared0.8_phi0.5",
+        "kind": "witness",
+        "phi": 0.5,
+        "n_years": 40,
+        "slope_per_decade": 0.0,
+        "step": null,
+        "gap_fraction": 0.0
+      },
+      "false_alarm": {
+        "decision": {
+          "rate": 0.0534,
+          "ci95": [
+            0.0492,
+            0.058
+          ]
+        },
+        "ols_annual": {
+          "rate": 0.0534,
+          "ci95": [
+            0.0492,
+            0.058
+          ]
+        },
+        "ols": {
+          "rate": 0.0552,
+          "ci95": [
+            0.0509,
+            0.0598
+          ]
+        },
+        "mk": {
+          "rate": 0.058,
+          "ci95": [
+            0.0536,
+            0.0628
+          ]
+        }
+      },
+      "verdicts": {
+        "proven": 0.002,
+        "strong": 0.0,
+        "likely": 0.045,
+        "suspicious": 0.172,
+        "no_evidence": 0.781,
+        "inadmissible": 0.0
+      }
+    }
+  ],
+  "acceptance": {
+    "ar1_phi0.0: decision FA in 3-7%": true,
+    "ar1_phi0.0: annual OLS FA in 3-7%": true,
+    "ar1_phi0.0: monthly OLS FA in 3-7%": true,
+    "ar1_phi0.0: monthly MK FA in 3-7%": true,
+    "ar1_phi0.0: false proven < 1%": true,
+    "ar1_phi0.0: false strong-or-better < 5%": true,
+    "ar1_phi0.3: decision FA in 3-7%": true,
+    "ar1_phi0.3: annual OLS FA in 3-7%": true,
+    "ar1_phi0.3: monthly OLS FA in 3-7%": true,
+    "ar1_phi0.3: monthly MK FA in 3-7%": true,
+    "ar1_phi0.3: false proven < 1%": true,
+    "ar1_phi0.3: false strong-or-better < 5%": true,
+    "ar1_phi0.6: decision FA in 3-7%": true,
+    "ar1_phi0.6: annual OLS FA in 3-7%": true,
+    "ar1_phi0.6: monthly OLS FA in 3-7%": true,
+    "ar1_phi0.6: monthly MK FA in 3-7%": true,
+    "ar1_phi0.6: false proven < 1%": true,
+    "ar1_phi0.6: false strong-or-better < 5%": true,
+    "ar1_phi0.8: decision FA in 3-7%": true,
+    "ar1_phi0.8: annual OLS FA in 3-7%": true,
+    "ar1_phi0.8: monthly OLS FA in 3-7%": true,
+    "ar1_phi0.8: monthly MK FA in 3-7%": true,
+    "ar1_phi0.8: false proven < 1%": true,
+    "ar1_phi0.8: false strong-or-better < 5%": true,
+    "ar1_phi0.5_gaps15: decision FA in 3-7%": true,
+    "ar1_phi0.5_gaps15: annual OLS FA in 3-7%": true,
+    "ar1_phi0.5_gaps15: monthly OLS FA in 3-7%": true,
+    "ar1_phi0.5_gaps15: monthly MK FA in 3-7%": true,
+    "ar1_phi0.5_gaps15: false proven < 1%": true,
+    "ar1_phi0.5_gaps15: false strong-or-better < 5%": true,
+    "skewed_gamma_phi0.4: decision FA in 3-7%": true,
+    "skewed_gamma_phi0.4: false proven < 1%": true,
+    "skewed_gamma_phi0.4: false strong-or-better < 5%": true,
+    "iaaft_synthetic_long_memory: decision FA in 3-7%": true,
+    "iaaft_synthetic_long_memory: annual OLS FA in 3-7%": true,
+    "iaaft_synthetic_long_memory: false proven < 1%": true,
+    "iaaft_synthetic_long_memory: false strong-or-better < 5%": true,
+    "witness_shared0.8_phi0.5: decision FA in 3-7%": true,
+    "witness_shared0.8_phi0.5: annual OLS FA in 3-7%": true,
+    "witness_shared0.8_phi0.5: false proven < 1%": true,
+    "witness_shared0.8_phi0.5: false strong-or-better < 5%": true,
+    "detection at Weatherhead slope in 80-97% (decision rule)": true,
+    "benchmark steady_warming_with_witness": true,
+    "benchmark sensor_step_artifact": true,
+    "benchmark trend_explained_by_enso": true,
+    "benchmark short_record": true,
+    "benchmark poor_stable_coverage": true,
+    "benchmark witness_with_opposite_sign": true
+  },
+  "power": {
+    "phi": 0.5,
+    "n_years": 40,
+    "weatherhead_slope_per_decade": 0.2608879069638913,
+    "curve": [
+      {
+        "multiplier": 0.25,
+        "slope_per_decade": 0.06522197674097283,
+        "detect_decision": 0.122,
+        "detect_ols": 0.143,
+        "detect_mk": 0.147
+      },
+      {
+        "multiplier": 0.5,
+        "slope_per_decade": 0.13044395348194565,
+        "detect_decision": 0.353,
+        "detect_ols": 0.393,
+        "detect_mk": 0.404
+      },
+      {
+        "multiplier": 0.75,
+        "slope_per_decade": 0.19566593022291848,
+        "detect_decision": 0.668,
+        "detect_ols": 0.698,
+        "detect_mk": 0.698
+      },
+      {
+        "multiplier": 1.0,
+        "slope_per_decade": 0.2608879069638913,
+        "detect_decision": 0.881,
+        "detect_ols": 0.909,
+        "detect_mk": 0.909
+      },
+      {
+        "multiplier": 1.25,
+        "slope_per_decade": 0.32610988370486416,
+        "detect_decision": 0.971,
+        "detect_ols": 0.982,
+        "detect_mk": 0.979
+      },
+      {
+        "multiplier": 1.5,
+        "slope_per_decade": 0.39133186044583695,
+        "detect_decision": 0.994,
+        "detect_ols": 0.999,
+        "detect_mk": 0.999
+      },
+      {
+        "multiplier": 2.0,
+        "slope_per_decade": 0.5217758139277826,
+        "detect_decision": 1.0,
+        "detect_ols": 1.0,
+        "detect_mk": 1.0
+      }
+    ]
+  },
+  "signal_verdicts": {
+    "scenario": {
+      "name": "witness_trend_2x_weatherhead",
+      "kind": "witness",
+      "phi": 0.5,
+      "n_years": 40,
+      "slope_per_decade": 0.5217758139277826,
+      "step": null,
+      "gap_fraction": 0.0,
+      "template": null
+    },
+    "verdicts": {
+      "proven": 0.862,
+      "strong": 0.015,
+      "likely": 0.123,
+      "suspicious": 0.0,
+      "no_evidence": 0.0,
+      "inadmissible": 0.0
+    }
+  },
+  "benchmarks_synthetic": [
+    {
+      "name": "steady_warming_with_witness",
+      "verdict": "proven",
+      "strength": 100,
+      "caveats": [],
+      "expected": [
+        "proven"
+      ],
+      "passed": true
+    },
+    {
+      "name": "sensor_step_artifact",
+      "verdict": "suspicious",
+      "strength": 69,
+      "caveats": [
+        "possible_artifact",
+        "period_sensitive",
+        "long_memory"
+      ],
+      "expected": [
+        "likely",
+        "no_evidence",
+        "suspicious"
+      ],
+      "passed": true
+    },
+    {
+      "name": "trend_explained_by_enso",
+      "verdict": "likely",
+      "strength": 81,
+      "caveats": [
+        "index_trend_overlap",
+        "explained_by_enso"
+      ],
+      "expected": [
+        "likely",
+        "no_evidence",
+        "suspicious"
+      ],
+      "passed": true
+    },
+    {
+      "name": "short_record",
+      "verdict": "inadmissible",
+      "strength": 0,
+      "caveats": [
+        "short_record"
+      ],
+      "expected": [
+        "inadmissible"
+      ],
+      "passed": true
+    },
+    {
+      "name": "poor_stable_coverage",
+      "verdict": "suspicious",
+      "strength": 85,
+      "caveats": [
+        "low_stable_coverage"
+      ],
+      "expected": [
+        "suspicious"
+      ],
+      "passed": true
+    },
+    {
+      "name": "witness_with_opposite_sign",
+      "verdict": "likely",
+      "strength": 76,
+      "caveats": [
+        "witnesses_disagree"
+      ],
+      "expected": [
+        "likely",
+        "suspicious"
+      ],
+      "passed": true
+    }
+  ],
+  "benchmarks_real": [
+    {
+      "name": "arctic_t2m",
+      "status": "missing_fixture",
+      "fixture": "giovanni_m2tmnxslv_t2m_arctic.csv"
+    },
+    {
+      "name": "us_no2",
+      "status": "missing_fixture",
+      "fixture": "giovanni_omno2_no2_usa.csv"
+    },
+    {
+      "name": "stratosphere_t",
+      "status": "missing_fixture",
+      "fixture": "giovanni_airs_t_50hpa_global.csv"
+    },
+    {
+      "name": "grace_india_tws",
+      "status": "missing_fixture",
+      "fixture": "giovanni_grace_tws_north_india.csv"
+    }
+  ],
+  "passed": true,
+  "figures": [
+    "power_curve.png",
+    "false_alarms.png"
+  ]
+}

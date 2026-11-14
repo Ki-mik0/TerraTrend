@@ -1,0 +1,906 @@
+# Starter variable catalog for TerraTrend (stage A10, M3 VarSearch).
+#
+# TEMPORARY: a hand-written list of typical NASA / Giovanni variables so that search,
+# the pair generator and the evaluation harness have something real to work on before the
+# backend's full passport catalog (CatalogPort) exists. When the real catalog lands, keep the
+# same `id`s or regenerate the training pairs (the data manifest hashes this file).
+#
+# Fields:
+#   id              stable variable id (snake_case)
+#   concept         physical quantity; variables that share a concept are interchangeable
+#                   answers for a generic query (e.g. two precipitation products)
+#   theme / domain  filters of GET /api/v1/variables
+#   seasonal        true when the variable only makes sense for part of the year
+#   source          product / collection the values come from (Giovanni short name)
+#   units
+#   names, descriptions, keywords   per language: en, uk
+#   confusable_with ids that are easy to mix up (hard negatives for training)
+version: starter-0.1
+variables:
+  # ------------------------------------------------------------------ temperature
+  - id: air_temperature_2m
+    concept: air_temperature
+    theme: temperature
+    domain: atmosphere
+    seasonal: false
+    source: MERRA-2 M2TMNXSLV T2M
+    units: K
+    names: {en: Air temperature at 2 m, uk: Температура повітря на висоті 2 м}
+    descriptions:
+      en: Monthly mean near-surface air temperature, the standard "weather" temperature measured by thermometers in a shelter.
+      uk: Середньомісячна приземна температура повітря, звичайна «погодна» температура, яку показує термометр у будці.
+    keywords:
+      en: [temperature, air temperature, warming, heat, t2m, near-surface]
+      uk: [температура, температура повітря, потепління, тепло, приземна]
+    confusable_with: [land_surface_temperature_day, surface_skin_temperature, air_temperature_max, sea_surface_temperature]
+
+  - id: air_temperature_max
+    concept: air_temperature_max
+    theme: temperature
+    domain: atmosphere
+    seasonal: false
+    source: MERRA-2 M2SDNXSLV T2MMAX
+    units: K
+    names: {en: Daily maximum air temperature, uk: Максимальна добова температура повітря}
+    descriptions:
+      en: Highest air temperature of each day at 2 m, averaged per month; tracks heat waves and hot afternoons.
+      uk: Найвища температура повітря за добу на висоті 2 м, усереднена за місяць; показує спеку й хвилі тепла.
+    keywords:
+      en: [maximum temperature, daily max, heat wave, hot days, tmax]
+      uk: [максимальна температура, денний максимум, спека, хвиля тепла, спекотні дні]
+    confusable_with: [air_temperature_2m, air_temperature_min, land_surface_temperature_day]
+
+  - id: air_temperature_min
+    concept: air_temperature_min
+    theme: temperature
+    domain: atmosphere
+    seasonal: false
+    source: MERRA-2 M2SDNXSLV T2MMIN
+    units: K
+    names: {en: Daily minimum air temperature, uk: Мінімальна добова температура повітря}
+    descriptions:
+      en: Lowest air temperature of each day at 2 m, averaged per month; tracks cold nights and frosts.
+      uk: Найнижча температура повітря за добу на висоті 2 м, усереднена за місяць; показує холодні ночі й заморозки.
+    keywords:
+      en: [minimum temperature, night temperature, frost, cold nights, tmin]
+      uk: [мінімальна температура, нічна температура, заморозки, холодні ночі]
+    confusable_with: [air_temperature_2m, air_temperature_max, land_surface_temperature_night]
+
+  - id: land_surface_temperature_day
+    concept: land_surface_temperature_day
+    theme: temperature
+    domain: land
+    seasonal: false
+    source: MODIS Terra MOD11C3 LST_Day
+    units: K
+    names: {en: Land surface temperature (day), uk: Температура поверхні суші (день)}
+    descriptions:
+      en: Daytime temperature of the ground surface itself (soil, roofs, asphalt, canopy) seen by the MODIS satellite, hotter than the air on sunny days.
+      uk: Денна температура самої поверхні землі (ґрунт, дахи, асфальт, крони), яку бачить супутник MODIS; у сонячні дні гарячіша за повітря.
+    keywords:
+      en: [land surface temperature, LST, ground temperature, urban heat island, satellite temperature]
+      uk: [температура поверхні, LST, температура ґрунту, міський острів тепла, супутникова температура]
+    confusable_with: [air_temperature_2m, land_surface_temperature_night, surface_skin_temperature]
+
+  - id: land_surface_temperature_night
+    concept: land_surface_temperature_night
+    theme: temperature
+    domain: land
+    seasonal: false
+    source: MODIS Terra MOD11C3 LST_Night
+    units: K
+    names: {en: Land surface temperature (night), uk: Температура поверхні суші (ніч)}
+    descriptions:
+      en: Night-time temperature of the land surface from MODIS; shows how well cities and soils cool down after sunset.
+      uk: Нічна температура поверхні суші за MODIS; показує, наскільки міста й ґрунти охолоджуються після заходу сонця.
+    keywords:
+      en: [night land surface temperature, LST night, night heat, urban heat island]
+      uk: [нічна температура поверхні, LST ніч, нічна спека, острів тепла]
+    confusable_with: [land_surface_temperature_day, air_temperature_min]
+
+  - id: surface_skin_temperature
+    concept: skin_temperature
+    theme: temperature
+    domain: land
+    seasonal: false
+    source: MERRA-2 M2TMNXSLV TS
+    units: K
+    names: {en: Surface skin temperature, uk: Температура підстильної поверхні}
+    descriptions:
+      en: Reanalysis temperature of the very top of the surface (land, water or ice) that exchanges heat with the air.
+      uk: Температура самого верхнього шару поверхні (суша, вода чи лід) за реаналізом, що обмінюється теплом з повітрям.
+    keywords:
+      en: [skin temperature, surface temperature, TS, reanalysis]
+      uk: [температура поверхні, підстильна поверхня, реаналіз]
+    confusable_with: [land_surface_temperature_day, air_temperature_2m, sea_surface_temperature]
+
+  - id: sea_surface_temperature
+    concept: sea_surface_temperature
+    theme: temperature
+    domain: ocean
+    seasonal: false
+    source: MODIS Aqua SST 11um
+    units: degC
+    names: {en: Sea surface temperature, uk: Температура поверхні моря}
+    descriptions:
+      en: Temperature of the top layer of the ocean, seas and large lakes measured from space; key for marine heat waves and El Nino.
+      uk: Температура верхнього шару океану, морів і великих озер, виміряна з космосу; важлива для морських хвиль тепла й Ель-Ніньйо.
+    keywords:
+      en: [sea surface temperature, SST, ocean temperature, water temperature, marine heatwave]
+      uk: [температура моря, температура води, океан, морська хвиля тепла, SST]
+    confusable_with: [surface_skin_temperature, air_temperature_2m]
+
+  - id: air_temperature_850hpa
+    concept: air_temperature_upper
+    theme: temperature
+    domain: atmosphere
+    seasonal: false
+    source: AIRS AIRS3STM Temperature_A 850hPa
+    units: K
+    names: {en: Air temperature at 850 hPa, uk: Температура повітря на рівні 850 гПа}
+    descriptions:
+      en: Temperature about 1.5 km above sea level, above the daily surface effects; used for vertical temperature profiles.
+      uk: Температура приблизно на висоті 1,5 км над рівнем моря, вище за денні впливи поверхні; для вертикальних профілів.
+    keywords:
+      en: [upper air temperature, 850 hPa, vertical profile, lower troposphere]
+      uk: [температура у вільній атмосфері, 850 гПа, вертикальний профіль, нижня тропосфера]
+    confusable_with: [air_temperature_2m, geopotential_height_500hpa]
+
+  # ------------------------------------------------------------------ water cycle
+  - id: precipitation_imerg
+    concept: precipitation
+    theme: water
+    domain: atmosphere
+    seasonal: false
+    source: GPM IMERG Final Monthly precipitation
+    units: mm/month
+    names: {en: Precipitation (GPM IMERG), uk: Опади (GPM IMERG)}
+    descriptions:
+      en: Monthly total rain and snow from the GPM satellite constellation merged with rain gauges, 2000 to present.
+      uk: Місячна сума дощу й снігу з сузір'я супутників GPM, об'єднана з даними дощомірів, з 2000 року.
+    keywords:
+      en: [precipitation, rain, rainfall, drought, wet, IMERG, GPM]
+      uk: [опади, дощ, злива, посуха, вологість, IMERG, GPM]
+    confusable_with: [precipitation_gpcp, snowfall, soil_moisture_surface]
+
+  - id: precipitation_gpcp
+    concept: precipitation
+    theme: water
+    domain: atmosphere
+    seasonal: false
+    source: GPCP Monthly v3.2 precipitation
+    units: mm/day
+    names: {en: Precipitation (GPCP), uk: Опади (GPCP)}
+    descriptions:
+      en: Long climate record of monthly precipitation combining satellites and gauges since 1979, coarser than IMERG.
+      uk: Довгий кліматичний ряд місячних опадів із супутників і дощомірів з 1979 року, грубіший за IMERG.
+    keywords:
+      en: [precipitation, rainfall, GPCP, climate record, long-term rain]
+      uk: [опади, дощ, GPCP, довгий ряд, кліматичний ряд]
+    confusable_with: [precipitation_imerg, snowfall]
+
+  - id: snowfall
+    concept: snowfall
+    theme: water
+    domain: atmosphere
+    seasonal: true
+    source: MERRA-2 M2TMNXFLX PRECSNO
+    units: kg m-2 s-1
+    names: {en: Snowfall, uk: Снігопад}
+    descriptions:
+      en: Amount of precipitation that falls as snow; shows whether winters bring more rain instead of snow.
+      uk: Кількість опадів, що випадають у вигляді снігу; показує, чи взимку стає більше дощу замість снігу.
+    keywords:
+      en: [snowfall, snow precipitation, snowy winters, PRECSNO]
+      uk: [снігопад, сніг, снігові опади, сніжні зими]
+    confusable_with: [snow_cover, snow_water_equivalent, precipitation_imerg]
+
+  - id: snow_cover
+    concept: snow_cover
+    theme: cryosphere
+    domain: land
+    seasonal: true
+    source: MODIS Terra MOD10CM Snow_Cover_Monthly_CMG
+    units: percent
+    names: {en: Snow cover fraction, uk: Частка снігового покриву}
+    descriptions:
+      en: Percentage of land covered by snow each month as seen by MODIS; shorter snow seasons show up here.
+      uk: Відсоток суші, вкритої снігом щомісяця за MODIS; тут видно, як коротшає сніговий сезон.
+    keywords:
+      en: [snow cover, snow extent, snow season, MOD10]
+      uk: [сніговий покрив, площа снігу, сніговий сезон]
+    confusable_with: [snow_water_equivalent, snowfall, sea_ice_concentration]
+
+  - id: snow_water_equivalent
+    concept: snow_water_equivalent
+    theme: cryosphere
+    domain: land
+    seasonal: true
+    source: GLDAS Noah 0.25 SWE_inst
+    units: kg m-2
+    names: {en: Snow water equivalent, uk: Водний еквівалент снігу}
+    descriptions:
+      en: How much water is stored in the snowpack (depth of water if the snow melted); matters for spring floods and rivers.
+      uk: Скільки води зберігається в сніговому покриві (шар води, якби сніг розтанув); важливо для весняних повеней і річок.
+    keywords:
+      en: [snow water equivalent, SWE, snowpack, snow depth, meltwater]
+      uk: [водний еквівалент снігу, запаси снігу, висота снігу, талі води]
+    confusable_with: [snow_cover, snowfall, runoff]
+
+  - id: soil_moisture_surface
+    concept: soil_moisture_surface
+    theme: water
+    domain: land
+    seasonal: false
+    source: SMAP L3 soil_moisture
+    units: m3/m3
+    names: {en: Surface soil moisture, uk: Вологість поверхневого шару ґрунту}
+    descriptions:
+      en: Water content of the top 5 cm of soil measured by the SMAP satellite; the first sign of agricultural drought.
+      uk: Вміст води у верхніх 5 см ґрунту за супутником SMAP; перша ознака сільськогосподарської посухи.
+    keywords:
+      en: [soil moisture, wet soil, dry soil, drought, SMAP]
+      uk: [вологість ґрунту, сухий ґрунт, посуха, SMAP, волога]
+    confusable_with: [soil_moisture_root_zone, precipitation_imerg, evapotranspiration]
+
+  - id: soil_moisture_root_zone
+    concept: soil_moisture_root_zone
+    theme: water
+    domain: land
+    seasonal: false
+    source: GLDAS Noah 0.25 RootMoist_inst
+    units: kg m-2
+    names: {en: Root zone soil moisture, uk: Вологість ґрунту в кореневій зоні}
+    descriptions:
+      en: Water in the soil layer where plant roots live (down to about 1 m), from the GLDAS land model; slower drought indicator.
+      uk: Вода в шарі ґрунту, де живуть корені рослин (до ~1 м), за моделлю GLDAS; повільніший індикатор посухи.
+    keywords:
+      en: [root zone soil moisture, deep soil water, drought, GLDAS]
+      uk: [вологість кореневої зони, глибока волога, посуха, GLDAS]
+    confusable_with: [soil_moisture_surface, terrestrial_water_storage]
+
+  - id: evapotranspiration
+    concept: evapotranspiration
+    theme: water
+    domain: land
+    seasonal: false
+    source: GLDAS Noah 0.25 Evap_tavg
+    units: kg m-2 s-1
+    names: {en: Evapotranspiration, uk: Евапотранспірація (сумарне випаровування)}
+    descriptions:
+      en: Water returned to the air by evaporation from soil and water and by transpiration of plants.
+      uk: Вода, що повертається в повітря через випаровування з ґрунту й води та транспірацію рослин.
+    keywords:
+      en: [evapotranspiration, evaporation, ET, water loss, transpiration]
+      uk: [випаровування, евапотранспірація, транспірація, втрати води]
+    confusable_with: [potential_evapotranspiration, soil_moisture_surface, precipitation_imerg]
+
+  - id: potential_evapotranspiration
+    concept: potential_evapotranspiration
+    theme: water
+    domain: land
+    seasonal: false
+    source: GLDAS Noah 0.25 PotEvap_tavg
+    units: W m-2
+    names: {en: Potential evapotranspiration, uk: Потенційне випаровування}
+    descriptions:
+      en: How much water the air could take from a well-watered surface; the "thirst" of the atmosphere used in drought indices.
+      uk: Скільки води повітря могло б забрати з добре зволоженої поверхні; «спрага» атмосфери для індексів посухи.
+    keywords:
+      en: [potential evapotranspiration, PET, evaporative demand, aridity]
+      uk: [потенційне випаровування, випаровуваність, посушливість]
+    confusable_with: [evapotranspiration, relative_humidity]
+
+  - id: runoff
+    concept: runoff
+    theme: water
+    domain: land
+    seasonal: false
+    source: GLDAS Noah 0.25 Qs_acc
+    units: kg m-2
+    names: {en: Surface runoff, uk: Поверхневий стік}
+    descriptions:
+      en: Water that flows over the ground into streams and rivers instead of soaking in; linked to floods.
+      uk: Вода, що стікає поверхнею в струмки й річки замість просочуватися в ґрунт; пов'язана з повенями.
+    keywords:
+      en: [runoff, surface runoff, flood, river flow, streamflow]
+      uk: [стік, поверхневий стік, повінь, паводок, річки]
+    confusable_with: [precipitation_imerg, terrestrial_water_storage, snow_water_equivalent]
+
+  - id: terrestrial_water_storage
+    concept: terrestrial_water_storage
+    theme: water
+    domain: land
+    seasonal: false
+    source: GRACE / GRACE-FO JPL Mascon LWE thickness
+    units: cm
+    names: {en: Terrestrial water storage anomaly, uk: Аномалія запасів води на суші}
+    descriptions:
+      en: Change in all water stored on and under land (groundwater, soil, lakes, snow, ice) weighed by the GRACE gravity satellites.
+      uk: Зміна всієї води на суші та під нею (підземні води, ґрунт, озера, сніг, лід), «зважена» гравітаційними супутниками GRACE.
+    keywords:
+      en: [groundwater, water storage, GRACE, aquifer depletion, total water]
+      uk: [підземні води, запаси води, GRACE, виснаження водоносних горизонтів]
+    confusable_with: [soil_moisture_root_zone, runoff, sea_surface_height_anomaly]
+
+  - id: relative_humidity
+    concept: relative_humidity
+    theme: water
+    domain: atmosphere
+    seasonal: false
+    source: AIRS AIRS3STM RelHumSurf_A
+    units: percent
+    names: {en: Near-surface relative humidity, uk: Відносна вологість повітря біля поверхні}
+    descriptions:
+      en: How close the air near the ground is to saturation, in percent; low values mean dry, thirsty air.
+      uk: Наскільки повітря біля землі близьке до насичення, у відсотках; низькі значення означають сухе повітря.
+    keywords:
+      en: [relative humidity, humid air, dry air, muggy, humidity]
+      uk: [відносна вологість, вологість повітря, сухе повітря, задуха]
+    confusable_with: [specific_humidity, total_precipitable_water, soil_moisture_surface]
+
+  - id: specific_humidity
+    concept: specific_humidity
+    theme: water
+    domain: atmosphere
+    seasonal: false
+    source: MERRA-2 M2TMNXSLV QV2M
+    units: kg/kg
+    names: {en: Specific humidity at 2 m, uk: Питома вологість на висоті 2 м}
+    descriptions:
+      en: Mass of water vapour in each kilogram of air near the surface; rises as the air warms.
+      uk: Маса водяної пари в кожному кілограмі повітря біля поверхні; зростає разом із потеплінням.
+    keywords:
+      en: [specific humidity, water vapour, moisture content, QV2M]
+      uk: [питома вологість, водяна пара, вологовміст]
+    confusable_with: [relative_humidity, total_precipitable_water]
+
+  - id: total_precipitable_water
+    concept: precipitable_water
+    theme: water
+    domain: atmosphere
+    seasonal: false
+    source: MERRA-2 M2TMNXSLV TQV
+    units: kg m-2
+    names: {en: Total precipitable water vapour, uk: Загальний вміст водяної пари в стовпі атмосфери}
+    descriptions:
+      en: All water vapour in a column of air from the ground to space, as a depth of water; fuel for heavy rain.
+      uk: Уся водяна пара в стовпі повітря від землі до космосу, як шар води; «паливо» для злив.
+    keywords:
+      en: [precipitable water, column water vapour, TQV, atmospheric moisture]
+      uk: [водяна пара в атмосфері, вологовміст стовпа, TQV]
+    confusable_with: [specific_humidity, relative_humidity, cloud_fraction]
+
+  - id: cloud_fraction
+    concept: cloud_fraction
+    theme: radiation
+    domain: atmosphere
+    seasonal: false
+    source: MODIS Aqua MYD08_M3 Cloud_Fraction_Mean
+    units: fraction
+    names: {en: Cloud fraction, uk: Хмарність}
+    descriptions:
+      en: Share of the sky covered by clouds in satellite images; fewer clouds means more sunshine reaching the ground.
+      uk: Частка неба, вкрита хмарами на супутникових знімках; менше хмар означає більше сонця біля землі.
+    keywords:
+      en: [cloud cover, cloudiness, clouds, overcast, sunny days]
+      uk: [хмарність, хмари, похмуро, сонячні дні]
+    confusable_with: [shortwave_radiation_surface, total_precipitable_water]
+
+  # ------------------------------------------------------------------ vegetation, fire
+  - id: ndvi
+    concept: ndvi
+    theme: vegetation
+    domain: land
+    seasonal: false
+    source: MODIS Terra MOD13C2 NDVI
+    units: index
+    names: {en: Vegetation index NDVI, uk: Вегетаційний індекс NDVI}
+    descriptions:
+      en: Normalized Difference Vegetation Index from MODIS, a measure of how green and dense the plants are.
+      uk: Нормалізований диференційний вегетаційний індекс за MODIS, міра того, наскільки зелена й густа рослинність.
+    keywords:
+      en: [NDVI, greenness, vegetation, green, plants, forest health]
+      uk: [NDVI, зеленість, рослинність, зелень, ліси, стан рослин]
+    confusable_with: [evi, leaf_area_index, gross_primary_productivity]
+
+  - id: evi
+    concept: evi
+    theme: vegetation
+    domain: land
+    seasonal: false
+    source: MODIS Terra MOD13C2 EVI
+    units: index
+    names: {en: Enhanced vegetation index EVI, uk: Покращений вегетаційний індекс EVI}
+    descriptions:
+      en: Vegetation greenness index that stays sensitive in dense forests and crops where NDVI saturates.
+      uk: Індекс зеленості рослин, що лишається чутливим у густих лісах і посівах, де NDVI «насичується».
+    keywords:
+      en: [EVI, enhanced vegetation index, dense vegetation, canopy greenness]
+      uk: [EVI, вегетаційний індекс, густа рослинність, зеленість крон]
+    confusable_with: [ndvi, leaf_area_index]
+
+  - id: leaf_area_index
+    concept: leaf_area_index
+    theme: vegetation
+    domain: land
+    seasonal: false
+    source: MODIS MCD15A2H Lai
+    units: m2/m2
+    names: {en: Leaf area index, uk: Індекс листкової поверхні}
+    descriptions:
+      en: Area of leaves above each square metre of ground; tells how leafy forests and fields are.
+      uk: Площа листя над кожним квадратним метром землі; показує, наскільки облистнені ліси й поля.
+    keywords:
+      en: [leaf area index, LAI, leaves, foliage, canopy]
+      uk: [індекс листкової поверхні, LAI, листя, крони]
+    confusable_with: [ndvi, evi, fpar]
+
+  - id: fpar
+    concept: fpar
+    theme: vegetation
+    domain: land
+    seasonal: false
+    source: MODIS MCD15A2H Fpar
+    units: fraction
+    names: {en: Fraction of absorbed photosynthetic radiation, uk: Частка поглиненої фотосинтетичної радіації}
+    descriptions:
+      en: Share of sunlight usable for photosynthesis that the plant canopy absorbs.
+      uk: Частка придатного для фотосинтезу сонячного світла, яку поглинають рослини.
+    keywords:
+      en: [FPAR, absorbed light, photosynthesis, canopy light]
+      uk: [FPAR, поглинене світло, фотосинтез]
+    confusable_with: [leaf_area_index, gross_primary_productivity]
+
+  - id: gross_primary_productivity
+    concept: gpp
+    theme: vegetation
+    domain: land
+    seasonal: false
+    source: MODIS MOD17A2H Gpp
+    units: kgC m-2
+    names: {en: Gross primary productivity, uk: Валова первинна продуктивність}
+    descriptions:
+      en: Carbon taken up by plants through photosynthesis; how productive forests, grasslands and crops are.
+      uk: Вуглець, який рослини поглинають фотосинтезом; наскільки продуктивні ліси, луки й посіви.
+    keywords:
+      en: [GPP, productivity, photosynthesis, carbon uptake, crop yield]
+      uk: [продуктивність, фотосинтез, поглинання вуглецю, врожайність]
+    confusable_with: [ndvi, fpar, carbon_dioxide]
+
+  - id: fire_count
+    concept: active_fire
+    theme: vegetation
+    domain: land
+    seasonal: false
+    source: MODIS MOD14CM active fire pixels
+    units: count
+    names: {en: Active fire detections, uk: Кількість активних пожеж}
+    descriptions:
+      en: Number of fires burning at the moment the MODIS satellite passes over; wildfires, crop burning and peat fires.
+      uk: Кількість пожеж, що горять у момент прольоту супутника MODIS — лісові пожежі, спалювання стерні, торфовища.
+    keywords:
+      en: [wildfire, fire, forest fire, burning, hotspots]
+      uk: [пожежі, лісові пожежі, горіння, спалювання стерні, осередки]
+    confusable_with: [burned_area, black_carbon, carbon_monoxide]
+
+  - id: burned_area
+    concept: burned_area
+    theme: vegetation
+    domain: land
+    seasonal: false
+    source: MODIS MCD64A1 Burned Area
+    units: km2
+    names: {en: Burned area, uk: Площа згарищ}
+    descriptions:
+      en: Area of land burned by fires each month, mapped from changes in MODIS images.
+      uk: Площа землі, вигорілої за місяць, визначена за змінами на знімках MODIS.
+    keywords:
+      en: [burned area, burnt land, fire scars, wildfire area]
+      uk: [площа згарищ, вигоріла площа, згарища, площа пожеж]
+    confusable_with: [fire_count, ndvi]
+
+  # ------------------------------------------------------------------ air quality, composition
+  - id: aerosol_optical_depth
+    concept: aerosol_optical_depth
+    theme: air_quality
+    domain: atmosphere
+    seasonal: false
+    source: MODIS Aqua MYD08_M3 AOD 550 nm Dark Target Deep Blue
+    units: unitless
+    names: {en: Aerosol optical depth, uk: Аерозольна оптична товща}
+    descriptions:
+      en: How much haze, smoke, dust and pollution particles dim sunlight through the whole atmosphere.
+      uk: Наскільки серпанок, дим, пил і частинки забруднення послаблюють сонячне світло в усій атмосфері.
+    keywords:
+      en: [aerosol, AOD, haze, smog, particles, air pollution]
+      uk: [аерозоль, AOD, серпанок, смог, частинки, забруднення повітря]
+    confusable_with: [pm25, dust_aod, black_carbon]
+
+  - id: pm25
+    concept: pm25
+    theme: air_quality
+    domain: atmosphere
+    seasonal: false
+    source: MERRA-2 M2TMNXAER surface PM2.5 (derived)
+    units: ug m-3
+    names: {en: Surface fine particulate matter PM2.5, uk: Дрібнодисперсні частинки PM2.5 біля поверхні}
+    descriptions:
+      en: Concentration of tiny particles we breathe near the ground, the main health-related air pollution measure.
+      uk: Концентрація дрібних частинок, якими ми дихаємо біля землі, головна міра забруднення повітря для здоров'я.
+    keywords:
+      en: [PM2.5, particulate matter, air quality, smog, pollution, dust]
+      uk: [PM2.5, тверді частинки, якість повітря, смог, забруднення, пил]
+    confusable_with: [aerosol_optical_depth, dust_aod, black_carbon]
+
+  - id: nitrogen_dioxide
+    concept: no2
+    theme: air_quality
+    domain: atmosphere
+    seasonal: false
+    source: OMI OMNO2d tropospheric NO2 column
+    units: molecules cm-2
+    names: {en: Tropospheric nitrogen dioxide (NO2), uk: Діоксид азоту (NO2) у тропосфері}
+    descriptions:
+      en: Amount of NO2 gas in the lower atmosphere, emitted mostly by cars, power plants and industry.
+      uk: Кількість газу NO2 у нижній атмосфері, який викидають переважно авто, електростанції й промисловість.
+    keywords:
+      en: [NO2, nitrogen dioxide, traffic pollution, emissions, OMI]
+      uk: [NO2, діоксид азоту, двоокис азоту, вихлопи, викиди, транспорт]
+    confusable_with: [sulfur_dioxide, formaldehyde, pm25]
+
+  - id: sulfur_dioxide
+    concept: so2
+    theme: air_quality
+    domain: atmosphere
+    seasonal: false
+    source: OMI OMSO2e SO2 column PBL
+    units: DU
+    names: {en: Sulfur dioxide (SO2), uk: Діоксид сірки (SO2)}
+    descriptions:
+      en: SO2 gas from coal burning, smelters and volcanoes; causes acid rain.
+      uk: Газ SO2 від спалювання вугілля, металургії та вулканів; спричиняє кислотні дощі.
+    keywords:
+      en: [SO2, sulfur dioxide, volcano, coal, acid rain]
+      uk: [SO2, діоксид сірки, сірчистий газ, вулкан, вугілля, кислотні дощі]
+    confusable_with: [nitrogen_dioxide, aerosol_optical_depth]
+
+  - id: total_ozone
+    concept: total_ozone
+    theme: air_quality
+    domain: atmosphere
+    seasonal: false
+    source: OMI OMTO3e ColumnAmountO3
+    units: DU
+    names: {en: Total column ozone, uk: Загальний вміст озону}
+    descriptions:
+      en: All ozone in the atmospheric column, mostly the stratospheric ozone layer that protects from UV; tracks the ozone hole.
+      uk: Увесь озон у стовпі атмосфери, переважно стратосферний озоновий шар, що захищає від УФ; показує озонову діру.
+    keywords:
+      en: [ozone, ozone layer, ozone hole, Dobson units, stratosphere]
+      uk: [озон, озоновий шар, озонова діра, одиниці Добсона, стратосфера]
+    confusable_with: [uv_index, nitrogen_dioxide]
+
+  - id: carbon_monoxide
+    concept: co
+    theme: air_quality
+    domain: atmosphere
+    seasonal: false
+    source: MOPITT MOP03JM CO total column
+    units: molecules cm-2
+    names: {en: Carbon monoxide (CO), uk: Чадний газ (CO)}
+    descriptions:
+      en: Column of carbon monoxide, a gas from incomplete burning in fires, traffic and industry.
+      uk: Вміст чадного газу (монооксиду вуглецю) у стовпі атмосфери від неповного згоряння (пожежі, транспорт, промисловість).
+    keywords:
+      en: [carbon monoxide, CO, smoke, fire emissions, MOPITT]
+      uk: [чадний газ, монооксид вуглецю, CO, дим, викиди від пожеж]
+    confusable_with: [carbon_dioxide, fire_count, nitrogen_dioxide]
+
+  - id: carbon_dioxide
+    concept: co2
+    theme: air_quality
+    domain: atmosphere
+    seasonal: false
+    source: OCO-2 L3 XCO2
+    units: ppm
+    names: {en: Carbon dioxide (XCO2), uk: Вуглекислий газ (XCO2)}
+    descriptions:
+      en: Average CO2 concentration in the air column measured by the OCO-2 satellite; the main greenhouse gas.
+      uk: Середня концентрація CO2 у стовпі повітря за супутником OCO-2; головний парниковий газ.
+    keywords:
+      en: [CO2, carbon dioxide, greenhouse gas, XCO2, OCO-2, emissions]
+      uk: [CO2, вуглекислий газ, діоксид вуглецю, парниковий газ, викиди]
+    confusable_with: [methane, carbon_monoxide, gross_primary_productivity]
+
+  - id: methane
+    concept: ch4
+    theme: air_quality
+    domain: atmosphere
+    seasonal: false
+    source: AIRS AIRS3STM CH4 total column
+    units: ppb
+    names: {en: Methane (CH4), uk: Метан (CH4)}
+    descriptions:
+      en: Methane in the atmosphere, a strong greenhouse gas from wetlands, livestock, landfills and gas leaks.
+      uk: Метан в атмосфері, сильний парниковий газ від боліт, худоби, звалищ і витоків газу.
+    keywords:
+      en: [methane, CH4, greenhouse gas, gas leaks, wetlands]
+      uk: [метан, CH4, парниковий газ, витоки газу, болота]
+    confusable_with: [carbon_dioxide, carbon_monoxide]
+
+  - id: dust_aod
+    concept: dust
+    theme: air_quality
+    domain: atmosphere
+    seasonal: false
+    source: MERRA-2 M2TMNXAER DUEXTTAU
+    units: unitless
+    names: {en: Dust aerosol optical depth, uk: Оптична товща пилового аерозолю}
+    descriptions:
+      en: How much desert and soil dust in the air dims sunlight; dust storms and Saharan dust outbreaks.
+      uk: Наскільки пустельний і ґрунтовий пил у повітрі послаблює сонячне світло; пилові бурі й сахарський пил.
+    keywords:
+      en: [dust, dust storm, Saharan dust, mineral aerosol, sand]
+      uk: [пил, пилова буря, сахарський пил, пісок, мінеральний аерозоль]
+    confusable_with: [aerosol_optical_depth, pm25]
+
+  - id: black_carbon
+    concept: black_carbon
+    theme: air_quality
+    domain: atmosphere
+    seasonal: false
+    source: MERRA-2 M2TMNXAER BCSMASS
+    units: kg m-3
+    names: {en: Black carbon surface concentration, uk: Концентрація сажі біля поверхні}
+    descriptions:
+      en: Soot particles near the ground from diesel engines, stoves and fires; darken snow and harm health.
+      uk: Частинки сажі біля землі від дизельних двигунів, печей і пожеж; затемнюють сніг і шкодять здоров'ю.
+    keywords:
+      en: [black carbon, soot, smoke, diesel, BC]
+      uk: [сажа, чорний вуглець, кіптява, дим, дизель]
+    confusable_with: [pm25, aerosol_optical_depth, fire_count]
+
+  - id: formaldehyde
+    concept: hcho
+    theme: air_quality
+    domain: atmosphere
+    seasonal: false
+    source: OMI OMHCHOd HCHO column
+    units: molecules cm-2
+    names: {en: Formaldehyde (HCHO), uk: Формальдегід (HCHO)}
+    descriptions:
+      en: Formaldehyde column, a marker of volatile organic compounds from forests, fires and industry that form ozone smog.
+      uk: Вміст формальдегіду, маркер летких органічних сполук від лісів, пожеж і промисловості, що утворюють озоновий смог.
+    keywords:
+      en: [formaldehyde, HCHO, VOC, organic compounds]
+      uk: [формальдегід, HCHO, леткі органічні сполуки]
+    confusable_with: [nitrogen_dioxide, total_ozone]
+
+  # ------------------------------------------------------------------ radiation and energy
+  - id: shortwave_radiation_surface
+    concept: surface_solar_radiation
+    theme: radiation
+    domain: atmosphere
+    seasonal: false
+    source: MERRA-2 M2TMNXRAD SWGDN
+    units: W m-2
+    names: {en: Incoming solar radiation at the surface, uk: Сонячна радіація біля поверхні}
+    descriptions:
+      en: Sunlight energy reaching the ground; matters for solar panels, crops and "dimming / brightening" of the sky.
+      uk: Енергія сонячного світла, що доходить до землі; важлива для сонячних панелей, посівів і «потьмяніння» неба.
+    keywords:
+      en: [solar radiation, sunshine, sunlight, insolation, solar energy]
+      uk: [сонячна радіація, сонячне світло, інсоляція, сонячна енергія]
+    confusable_with: [cloud_fraction, outgoing_longwave_radiation, uv_index]
+
+  - id: outgoing_longwave_radiation
+    concept: olr
+    theme: radiation
+    domain: atmosphere
+    seasonal: false
+    source: CERES EBAF TOA longwave flux
+    units: W m-2
+    names: {en: Outgoing longwave radiation, uk: Вихідне довгохвильове випромінювання}
+    descriptions:
+      en: Heat radiated by the Earth to space at the top of the atmosphere; part of the planetary energy balance.
+      uk: Тепло, яке Земля випромінює в космос на верхній межі атмосфери; частина енергетичного балансу планети.
+    keywords:
+      en: [OLR, longwave radiation, infrared, energy balance, CERES]
+      uk: [довгохвильове випромінювання, інфрачервоне, енергетичний баланс, CERES]
+    confusable_with: [shortwave_radiation_surface, surface_albedo]
+
+  - id: surface_albedo
+    concept: albedo
+    theme: radiation
+    domain: land
+    seasonal: false
+    source: MERRA-2 M2TMNXRAD ALBEDO
+    units: fraction
+    names: {en: Surface albedo, uk: Альбедо поверхні}
+    descriptions:
+      en: Share of sunlight the surface reflects; snow and ice are bright, forests and oceans are dark.
+      uk: Частка сонячного світла, яку відбиває поверхня; сніг і лід світлі, ліси й океан темні.
+    keywords:
+      en: [albedo, reflectivity, reflection, brightness]
+      uk: [альбедо, відбивна здатність, відбиття]
+    confusable_with: [snow_cover, shortwave_radiation_surface]
+
+  - id: uv_index
+    concept: uv_index
+    theme: radiation
+    domain: atmosphere
+    seasonal: false
+    source: OMI OMUVBd UVindex
+    units: index
+    names: {en: UV index, uk: УФ-індекс}
+    descriptions:
+      en: Strength of sunburn-causing ultraviolet radiation at the surface at local noon.
+      uk: Сила ультрафіолету, що спричиняє сонячні опіки, біля поверхні опівдні.
+    keywords:
+      en: [UV index, ultraviolet, sunburn, UV radiation]
+      uk: [УФ-індекс, ультрафіолет, сонячні опіки, УФ-випромінювання]
+    confusable_with: [total_ozone, shortwave_radiation_surface]
+
+  # ------------------------------------------------------------------ wind and dynamics
+  - id: wind_speed_10m
+    concept: wind_speed
+    theme: wind
+    domain: atmosphere
+    seasonal: false
+    source: MERRA-2 M2TMNXSLV U10M V10M (speed)
+    units: m/s
+    names: {en: Wind speed at 10 m, uk: Швидкість вітру на висоті 10 м}
+    descriptions:
+      en: Average speed of the wind near the ground; relevant for wind energy and storms.
+      uk: Середня швидкість вітру біля землі; важлива для вітрової енергетики та штормів.
+    keywords:
+      en: [wind, wind speed, windy, storms, wind energy]
+      uk: [вітер, швидкість вітру, вітряно, шторми, вітроенергетика]
+    confusable_with: [sea_level_pressure, boundary_layer_height]
+
+  - id: sea_level_pressure
+    concept: sea_level_pressure
+    theme: wind
+    domain: atmosphere
+    seasonal: false
+    source: MERRA-2 M2TMNXSLV SLP
+    units: Pa
+    names: {en: Sea level pressure, uk: Тиск на рівні моря}
+    descriptions:
+      en: Air pressure reduced to sea level; highs and lows that steer the weather.
+      uk: Атмосферний тиск, приведений до рівня моря; антициклони й циклони, що керують погодою.
+    keywords:
+      en: [pressure, air pressure, barometric, cyclone, anticyclone, SLP]
+      uk: [тиск, атмосферний тиск, циклон, антициклон, барометр]
+    confusable_with: [geopotential_height_500hpa, wind_speed_10m]
+
+  - id: geopotential_height_500hpa
+    concept: geopotential_height
+    theme: wind
+    domain: atmosphere
+    seasonal: false
+    source: MERRA-2 M2IMNPASM H 500hPa
+    units: m
+    names: {en: Geopotential height at 500 hPa, uk: Геопотенціальна висота 500 гПа}
+    descriptions:
+      en: Height of the 500 hPa pressure surface (~5.5 km); shows ridges and troughs of the jet stream and blocking.
+      uk: Висота ізобаричної поверхні 500 гПа (~5,5 км); показує гребені й улоговини струминної течії та блокування.
+    keywords:
+      en: [geopotential height, 500 hPa, jet stream, blocking, upper air]
+      uk: [геопотенціал, 500 гПа, струминна течія, блокування]
+    confusable_with: [sea_level_pressure, air_temperature_850hpa]
+
+  - id: boundary_layer_height
+    concept: boundary_layer_height
+    theme: wind
+    domain: atmosphere
+    seasonal: false
+    source: MERRA-2 M2TMNXFLX PBLH
+    units: m
+    names: {en: Planetary boundary layer height, uk: Висота пограничного шару атмосфери}
+    descriptions:
+      en: Depth of the lowest, well-mixed layer of air; a shallow layer traps pollution near the ground.
+      uk: Товщина найнижчого перемішаного шару повітря; тонкий шар затримує забруднення біля землі.
+    keywords:
+      en: [boundary layer, PBL height, mixing height, inversion]
+      uk: [пограничний шар, висота перемішування, інверсія]
+    confusable_with: [wind_speed_10m, pm25]
+
+  - id: lightning_flash_rate
+    concept: lightning
+    theme: wind
+    domain: atmosphere
+    seasonal: false
+    source: TRMM LIS / ISS LIS flash rate climatology
+    units: flashes km-2 yr-1
+    names: {en: Lightning flash rate, uk: Частота блискавок}
+    descriptions:
+      en: How many lightning flashes occur per square kilometre, a measure of thunderstorm activity.
+      uk: Скільки спалахів блискавки припадає на квадратний кілометр, міра грозової активності.
+    keywords:
+      en: [lightning, thunderstorms, flashes, storms]
+      uk: [блискавки, грози, грозова активність]
+    confusable_with: [precipitation_imerg, cloud_fraction]
+
+  # ------------------------------------------------------------------ cryosphere and ocean
+  - id: sea_ice_concentration
+    concept: sea_ice
+    theme: cryosphere
+    domain: ocean
+    seasonal: true
+    source: NSIDC Sea Ice Concentration (NASA Team)
+    units: percent
+    names: {en: Sea ice concentration, uk: Зімкнутість морського льоду}
+    descriptions:
+      en: Share of the ocean surface covered by ice in polar seas; Arctic sea ice decline.
+      uk: Частка поверхні океану, вкрита льодом у полярних морях; скорочення арктичного льоду.
+    keywords:
+      en: [sea ice, Arctic ice, ice extent, polar ice, ice melt]
+      uk: [морський лід, арктичний лід, площа льоду, танення льоду]
+    confusable_with: [snow_cover, sea_surface_temperature]
+
+  - id: chlorophyll_a
+    concept: chlorophyll
+    theme: ocean
+    domain: ocean
+    seasonal: false
+    source: MODIS Aqua chlor_a
+    units: mg m-3
+    names: {en: Ocean chlorophyll-a, uk: Хлорофіл-a в океані}
+    descriptions:
+      en: Concentration of chlorophyll in sea water, a measure of phytoplankton and algal blooms.
+      uk: Концентрація хлорофілу в морській воді, міра фітопланктону й цвітіння водоростей.
+    keywords:
+      en: [chlorophyll, phytoplankton, algal bloom, ocean color, marine productivity]
+      uk: [хлорофіл, фітопланктон, цвітіння води, водорості, колір океану]
+    confusable_with: [sea_surface_temperature, ndvi]
+
+  - id: sea_surface_height_anomaly
+    concept: sea_level
+    theme: ocean
+    domain: ocean
+    seasonal: false
+    source: MEaSUREs gridded sea surface height anomalies
+    units: m
+    names: {en: Sea surface height anomaly, uk: Аномалія рівня моря}
+    descriptions:
+      en: How much the sea surface is above or below its average height, from satellite altimetry; sea level rise.
+      uk: Наскільки поверхня моря вища чи нижча за середню, за супутниковою альтиметрією; підйом рівня моря.
+    keywords:
+      en: [sea level, sea level rise, altimetry, ocean height]
+      uk: [рівень моря, підйом рівня моря, альтиметрія]
+    confusable_with: [terrestrial_water_storage, sea_surface_temperature]
+
+  - id: sea_surface_salinity
+    concept: salinity
+    theme: ocean
+    domain: ocean
+    seasonal: false
+    source: SMAP L3 sea surface salinity
+    units: psu
+    names: {en: Sea surface salinity, uk: Солоність поверхні моря}
+    descriptions:
+      en: How salty the top layer of the sea is; changes with rain, evaporation, river water and ice melt.
+      uk: Наскільки солоний верхній шар моря; змінюється від дощів, випаровування, річкової води й танення льоду.
+    keywords:
+      en: [salinity, salt, sea water, SSS]
+      uk: [солоність, сіль, морська вода]
+    confusable_with: [sea_surface_temperature, chlorophyll_a]
+
+  # ------------------------------------------------------------------ human footprint
+  - id: night_lights
+    concept: night_lights
+    theme: human
+    domain: land
+    seasonal: false
+    source: VIIRS Black Marble VNP46A3 radiance
+    units: nW cm-2 sr-1
+    names: {en: Night-time lights, uk: Нічні вогні}
+    descriptions:
+      en: Brightness of artificial light at night seen from space; shows cities, power outages and economic activity.
+      uk: Яскравість штучного світла вночі з космосу; показує міста, відключення світла та економічну активність.
+    keywords:
+      en: [night lights, light pollution, urbanization, power outage, Black Marble]
+      uk: [нічні вогні, світлове забруднення, урбанізація, блекаут, відключення світла]
+    confusable_with: [land_surface_temperature_night, nitrogen_dioxide]

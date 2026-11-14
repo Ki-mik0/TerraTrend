@@ -1,0 +1,82 @@
+# Process graph for Story Lens (docs/PLAN_ANALYTICS.md section 10.1).
+#
+# Nodes are concepts (SeriesMeta.concept_id). Ids follow the `concept` field of
+# catalog/variables_starter.yaml, so several datasets of one concept share a node.
+# Concepts that are not catalog variables but products of the analytics:
+#   growing_season_length  ETCCDI GSL indicator (indicators/, section 7)
+#   snow_days              SNOW_DAYS indicator (indicators/, section 7)
+#   urban_heat_contrast    city minus ring difference series (spatial/urban.py, 8.7)
+#   stratosphere_temperature  temperature on stratospheric levels (spatial/profile.py, 8.6)
+#
+# An edge "source -> target" says: a change in source drives a change in target
+#   expected_sign  +1 same direction, -1 opposite direction
+#   lag_months     typical delay of the response, 0..24
+#   mechanism_code a code translated by the web app (never a sentence here)
+# Edges are read as undirected when looking for related variables (depth <= 2), with
+# the lag counted from the driver to the response. If two edges link the same pair
+# (a feedback loop), the first one in this file is used.
+#
+# The graph is validated on load (story/process_graph.py): unique ids, known nodes,
+# no self-loops, no duplicate (source, target), snake_case codes.
+
+version: processes_v1
+control_concept: air_temperature  # partial correlation controls for this concept
+
+nodes:
+  - {id: air_temperature, group: temperature}
+  - {id: land_surface_temperature_day, group: temperature}
+  - {id: sea_surface_temperature, group: ocean}
+  - {id: air_temperature_upper, group: atmosphere}
+  - {id: stratosphere_temperature, group: atmosphere}
+  - {id: precipitation, group: water}
+  - {id: soil_moisture_surface, group: water}
+  - {id: soil_moisture_root_zone, group: water}
+  - {id: evapotranspiration, group: water}
+  - {id: terrestrial_water_storage, group: water}
+  - {id: ndvi, group: vegetation}
+  - {id: growing_season_length, group: vegetation}
+  - {id: burned_area, group: vegetation}
+  - {id: snow_cover, group: cryosphere}
+  - {id: snow_days, group: cryosphere}
+  - {id: snow_water_equivalent, group: cryosphere}
+  - {id: sea_ice, group: cryosphere}
+  - {id: no2, group: air_quality}
+  - {id: aerosol_optical_depth, group: air_quality}
+  - {id: urban_heat_contrast, group: urban}
+
+edges:
+  # temperature drives water demand and the cryosphere
+  - {source: air_temperature, target: evapotranspiration, expected_sign: 1, lag_months: 0, mechanism_code: evaporative_demand}
+  - {source: air_temperature, target: soil_moisture_surface, expected_sign: -1, lag_months: 1, mechanism_code: drying_by_heat}
+  - {source: air_temperature, target: growing_season_length, expected_sign: 1, lag_months: 0, mechanism_code: thermal_growing_season}
+  - {source: air_temperature, target: snow_cover, expected_sign: -1, lag_months: 0, mechanism_code: snowmelt}
+  - {source: air_temperature, target: snow_days, expected_sign: -1, lag_months: 0, mechanism_code: snowmelt}
+  - {source: air_temperature, target: snow_water_equivalent, expected_sign: -1, lag_months: 0, mechanism_code: snowmelt}
+  - {source: air_temperature, target: sea_ice, expected_sign: -1, lag_months: 1, mechanism_code: ice_melt}
+  - {source: air_temperature, target: land_surface_temperature_day, expected_sign: 1, lag_months: 0, mechanism_code: surface_air_coupling}
+  - {source: air_temperature, target: air_temperature_upper, expected_sign: 1, lag_months: 0, mechanism_code: vertical_mixing}
+  - {source: air_temperature, target: burned_area, expected_sign: 1, lag_months: 0, mechanism_code: fire_weather}
+  # water cycle
+  - {source: precipitation, target: soil_moisture_surface, expected_sign: 1, lag_months: 0, mechanism_code: recharge}
+  - {source: precipitation, target: snow_water_equivalent, expected_sign: 1, lag_months: 0, mechanism_code: snowfall}
+  - {source: precipitation, target: ndvi, expected_sign: 1, lag_months: 1, mechanism_code: water_supply_vegetation}
+  - {source: precipitation, target: terrestrial_water_storage, expected_sign: 1, lag_months: 1, mechanism_code: water_balance}
+  - {source: soil_moisture_surface, target: soil_moisture_root_zone, expected_sign: 1, lag_months: 1, mechanism_code: infiltration}
+  - {source: soil_moisture_surface, target: air_temperature, expected_sign: -1, lag_months: 0, mechanism_code: land_atmosphere_feedback}
+  - {source: soil_moisture_surface, target: burned_area, expected_sign: -1, lag_months: 1, mechanism_code: fuel_dryness}
+  - {source: soil_moisture_root_zone, target: evapotranspiration, expected_sign: 1, lag_months: 0, mechanism_code: water_limited_et}
+  - {source: soil_moisture_root_zone, target: ndvi, expected_sign: 1, lag_months: 1, mechanism_code: root_zone_water}
+  - {source: evapotranspiration, target: terrestrial_water_storage, expected_sign: -1, lag_months: 1, mechanism_code: water_balance}
+  - {source: snow_water_equivalent, target: soil_moisture_surface, expected_sign: 1, lag_months: 2, mechanism_code: meltwater_recharge}
+  - {source: snow_cover, target: snow_days, expected_sign: 1, lag_months: 0, mechanism_code: snow_season}
+  # vegetation and surface
+  - {source: ndvi, target: land_surface_temperature_day, expected_sign: -1, lag_months: 0, mechanism_code: evaporative_cooling}
+  - {source: urban_heat_contrast, target: land_surface_temperature_day, expected_sign: 1, lag_months: 0, mechanism_code: urban_heat_island}
+  # ocean
+  - {source: sea_surface_temperature, target: air_temperature, expected_sign: 1, lag_months: 1, mechanism_code: ocean_heat_transfer}
+  - {source: sea_surface_temperature, target: sea_ice, expected_sign: -1, lag_months: 1, mechanism_code: ice_melt}
+  # atmosphere: greenhouse forcing warms the troposphere and cools the stratosphere
+  - {source: air_temperature_upper, target: stratosphere_temperature, expected_sign: -1, lag_months: 0, mechanism_code: greenhouse_vertical_contrast}
+  # air quality
+  - {source: no2, target: aerosol_optical_depth, expected_sign: 1, lag_months: 0, mechanism_code: secondary_aerosol}
+  - {source: burned_area, target: aerosol_optical_depth, expected_sign: 1, lag_months: 0, mechanism_code: smoke_emission}

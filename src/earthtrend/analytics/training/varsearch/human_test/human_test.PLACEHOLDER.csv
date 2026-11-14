@@ -1,0 +1,6 @@
+query,lang,relevant,author_role,source
+"PLACEHOLDER - format example only, never used as a test. Rows below were written by the A10 code author, not by test users.",en,air_temperature_2m,team,human
+is my town getting warmer,en,air_temperature_2m;air_temperature_max,team,human
+how dirty is the air in kyiv,en,pm25;aerosol_optical_depth;nitrogen_dioxide,team,human
+чи менше снігу в карпатах ніж раніше,uk,snow_cover;snowfall;snow_water_equivalent,team,human
+скільки горить лісів на поліссі,uk,fire_count;burned_area,team,human

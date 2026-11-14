@@ -1,0 +1,75 @@
+# Verdict rules v1 (docs/PLAN_ANALYTICS.md section 6.8).
+# Rules are data: changing anything here changes numerical behaviour and needs a new
+# calibration run (Stage 4). The ai_expert item is advisory and never appears here.
+
+ruleset: verdict_rules_v1
+
+# Item weights for `strength` (0-100). Items with status `na` are left out and the
+# remaining weights are renormalized, so a single-dataset case is not penalized for
+# having no witnesses.
+weights:
+  statistics: 30
+  witnesses: 20
+  robustness: 20
+  alibi: 15
+  quality: 10
+  magnitude: 5
+
+status_score:
+  pass: 1.0
+  partial: 0.5
+  fail: 0.0
+
+# Evaluated top to bottom; the first rule whose conditions all hold wins.
+# Conditions:
+#   all:          every listed item has one of the listed statuses
+#   any:          at least one listed item has one of the listed statuses
+#   min_pass:     at least N items other than `statistics` are `pass`
+#   no_fail_except: no item other than the listed ones is `fail`
+verdicts:
+  - code: proven
+    all:
+      statistics: [pass]
+      witnesses: [pass]
+      robustness: [pass]
+      alibi: [pass, na]
+      quality: [pass]
+
+  # The 6.8 table, read literally, would also give `strong` when witnesses or the
+  # triangle are only partial; its `likely` row names exactly those cases, so v1 keeps
+  # them out of `strong` (conservative reading).
+  - code: strong
+    all:
+      statistics: [pass]
+      witnesses: [pass, na]
+      robustness: [pass, na]
+    min_pass: 2
+    no_fail_except: [magnitude]
+
+  # A quality failure outranks partial agreement elsewhere.
+  - code: suspicious
+    all:
+      statistics: [pass]
+      quality: [fail]
+
+  - code: likely
+    all:
+      statistics: [pass]
+    any:
+      witnesses: [partial, fail]
+      robustness: [partial, fail]
+
+  # statistics=pass without enough independent support (e.g. only one dataset and a
+  # partial triangle) is still more than "suspicious": the table in 6.8 leaves this
+  # case open, v1 resolves it as `likely`.
+  - code: likely
+    all:
+      statistics: [pass]
+
+  - code: suspicious
+    all:
+      statistics: [partial]
+
+  - code: no_evidence
+    all:
+      statistics: [fail]

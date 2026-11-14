@@ -8,7 +8,7 @@ dependencies = [
     "uvicorn[standard]",
     "pydantic",
     "pydantic-settings",
-    "sqlalchemy",
+    "sqlalchemy[asyncio]",
     "alembic",
     "aiosqlite",
     "httpx",
@@ -18,7 +18,65 @@ dependencies = [
     "aiofiles",
     "pyjwt",
     "argon2-cffi",
+    # analytics core
+    "numpy",
+    "scipy",
+    "statsmodels",
+    "numba",
+    "pyyaml",
+    "Rbeast",
+    "ruptures",
 ]
+
+[project.optional-dependencies]
+# M3 VarSearch training and model inference (stage A10). The core package never imports
+# these; without them search falls back to BM25. `pip install -e ".[varsearch]"`.
+varsearch = [
+    "sentence-transformers>=3.0",
+    "torch",
+    "datasets",
+    "accelerate",
+]
+# M2 TrendPotential training and inference (stage A9). Without them no hints are shown.
+potential = [
+    "lightgbm>=4.3",
+    "scikit-learn>=1.5",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "hypothesis",
+    "pytest-cov",
+    "pytest-benchmark",
+    "ruff",
+    "mypy",
+    "types-PyYAML",
+]
+docs = [
+    "matplotlib",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+    "slow: long Monte-Carlo checks (deselect with -m 'not slow')",
+    "benchmark: performance targets of PLAN_ANALYTICS section 14",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "NPY"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+ignore_missing_imports = true
+warn_unused_ignores = true
 
 [build-system]
 requires = ["hatchling"]

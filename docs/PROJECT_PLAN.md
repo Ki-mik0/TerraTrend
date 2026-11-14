@@ -299,7 +299,7 @@ earthtrend-detective/
 |---|---|---|---|
 | OLS на аномаліях | `numpy`/`statsmodels` | нахил, 95% CI, t-тест | Пояснення для навчання |
 | Поправка на автокореляцію | власна | n_eff = n·(1−r₁)/(1+r₁), df = n_eff−2 | Завжди разом з OLS |
-| Mann-Kendall (Hamed-Rao) | `pymannkendall.hamed_rao_modification_test` | p-value, стійкий до викидів | Основний тест |
+| Mann-Kendall з AR(1)-поправкою (`mk_ar1`) | власна реалізація (`trend/mann_kendall.py`), див. PLAN_ANALYTICS 5.2 | p-value, стійкий до викидів | Основний тест |
 | Seasonal Mann-Kendall | `pymannkendall.seasonal_test` | тест на сирих місячних даних | Коли сезонність сильна |
 | Sen's slope | `pymannkendall.sens_slope` | робастний нахил | Основна оцінка швидкості |
 | Bootstrap CI (блоковий) | `numpy` | CI без припущень про нормальність | Режим «Експерт» |
