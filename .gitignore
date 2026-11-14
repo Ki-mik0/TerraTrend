@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.py[cod]
+.env
+data/*
+!data/.gitkeep
+!data/storage/
+data/storage/*
+!data/storage/.gitkeep
+models/*
+!models/.gitkeep
+web/node_modules/
+web/dist/
