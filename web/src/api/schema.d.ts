@@ -90,6 +90,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/analyze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Analyze */
+        post: operations["ApiV1AnalyzeAnalyze"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/cases/compare": {
         parameters: {
             query?: never;
@@ -467,6 +484,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/education/demos/{demo_id}/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DemoProgress */
+        get: operations["ApiV1EducationDemosDemoIdProgressDemoProgress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/education/demos/{demo_id}/steps/{step}": {
         parameters: {
             query?: never;
@@ -632,6 +666,40 @@ export interface paths {
         put?: never;
         /** GuestSession */
         post: operations["ApiV1SessionGuestGuestSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/session/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register */
+        post: operations["ApiV1SessionRegisterRegister"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/session/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** RefreshSession */
+        post: operations["ApiV1SessionRefreshRefreshSession"];
         delete?: never;
         options?: never;
         head?: never;
@@ -843,6 +911,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/radar/scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** ScanRadar */
+        post: operations["ApiV1RadarScanScanRadar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/cases/{case_id}/story": {
         parameters: {
             query?: never;
@@ -907,7 +992,8 @@ export interface paths {
         /** ListProducts */
         get: operations["ApiV1TilesProductsListProducts"];
         put?: never;
-        post?: never;
+        /** ComputeProduct */
+        post: operations["ApiV1TilesProductsComputeProduct"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1004,6 +1090,63 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AiOpinion */
+        AiOpinion: {
+            model_version: string;
+            class_probs: {
+                [key: string]: number;
+            };
+            predicted_class: string;
+            slope_per_decade: number;
+            slope_pi90: [
+                number,
+                number
+            ];
+            changepoint_probs?: number[] | null;
+            /** @enum {string} */
+            confidence: "high" | "medium" | "low";
+            agrees_with_statistics: boolean;
+        };
+        /** AnalysisOptions */
+        AnalysisOptions: {
+            period?: [
+                number,
+                number
+            ] | null;
+            /**
+             * @default annual
+             * @enum {string}
+             */
+            season?: "annual" | "DJF" | "MAM" | "JJA" | "SON";
+            baseline?: [
+                number,
+                number
+            ] | null;
+            /** @default 0.05 */
+            alpha?: number;
+            /** @default true */
+            nonlinear?: boolean;
+            /** @default true */
+            seasonal_breakdown?: boolean;
+            /** @default false */
+            changepoints?: boolean;
+            /** @default false */
+            bootstrap?: boolean;
+            /** @default 2000 */
+            n_boot?: number;
+            /** @default false */
+            expert?: boolean;
+            /** @default true */
+            ai_opinion?: boolean;
+            /** @default 42 */
+            seed?: number;
+        };
+        /** AnalyzeSeriesRequest */
+        AnalyzeSeriesRequest: {
+            series: Record<string, never>;
+            options?: Record<string, never> | null;
+            indicator?: string | null;
+        };
         /** AskRequest */
         AskRequest: {
             question: string;
@@ -1053,6 +1196,16 @@ export interface components {
             code: string;
             reason: string;
         };
+        /** BootstrapResult */
+        BootstrapResult: {
+            slope_ci95_per_decade: [
+                number,
+                number
+            ];
+            block_length: number;
+            n_boot: number;
+            seed: number;
+        };
         /** CacheStatsResponse */
         CacheStatsResponse: {
             backend: string;
@@ -1075,9 +1228,26 @@ export interface components {
                 [key: string]: string;
             } | null;
             evidence_version?: string | null;
+            /** @default  */
+            datasets_version?: string;
+            slope_decade?: number | null;
+            direction?: string | null;
             links?: {
                 [key: string]: string;
             };
+        };
+        /** Changepoint */
+        Changepoint: {
+            /** Format: date */
+            at: string;
+            probability: number | null;
+            ci: [
+                string,
+                string
+            ] | null;
+            jump: number | null;
+            /** @enum {string} */
+            method: "beast" | "pelt";
         };
         /** ClearResponse */
         ClearResponse: {
@@ -1122,6 +1292,11 @@ export interface components {
             language?: string;
             /** @default false */
             heavy?: boolean;
+            series?: Record<string, never> | null;
+            indicator?: string | null;
+            grid?: Record<string, never> | null;
+            profile_levels?: Record<string, never> | null;
+            urban_cube?: Record<string, never> | null;
         };
         /** CustomRegionRequest */
         CustomRegionRequest: {
@@ -1197,6 +1372,8 @@ export interface components {
         ExportRequest: {
             /** @enum {string} */
             format: "csv" | "geojson" | "ipynb" | "html" | "png" | "pdf" | "zip" | "nc" | "svg" | "citation";
+            /** @enum {null|string} */
+            language?: "uk" | "en" | null;
         };
         /** ExportResponse */
         ExportResponse: {
@@ -1205,6 +1382,7 @@ export interface components {
             format: string;
             status: string;
             download_url?: string | null;
+            filename?: string | null;
         };
         /** FamilyStatsResponse */
         FamilyStatsResponse: {
@@ -1249,6 +1427,18 @@ export interface components {
         /** IssueKeyRequest */
         IssueKeyRequest: {
             owner_id: string;
+        };
+        /** JackknifeResult */
+        JackknifeResult: {
+            years: number[];
+            slope_per_decade: (number | null)[];
+            p_mk: (number | null)[];
+            full_slope_per_decade: number;
+            full_p_mk: number;
+            max_rel_change: number;
+            most_influential_year: number | null;
+            significance_lost_year: number | null;
+            influential: boolean;
         };
         /** JobResponse */
         JobResponse: {
@@ -1305,10 +1495,50 @@ export interface components {
             username: string;
             password: string;
         };
+        /** Magnitude */
+        Magnitude: {
+            slope_per_decade: number;
+            percent_per_decade?: number | null;
+            sigma_anom: number;
+            snr: number;
+            /** @enum {string} */
+            snr_class: "weak" | "moderate" | "strong";
+        };
         /** MonthResponse */
         MonthResponse: {
             month: number;
             slope: number;
+        };
+        /** MonthTrend */
+        MonthTrend: {
+            month: number;
+            slope_per_decade: number | null;
+            ci95: [
+                number,
+                number
+            ] | null;
+            p_mk: number | null;
+            q_value: number | null;
+            significant: boolean;
+            n_years: number;
+        };
+        /** NonlinearResult */
+        NonlinearResult: {
+            years: number[];
+            curve: number[];
+            curve_low: number[];
+            curve_high: number[];
+            derivative_per_decade: number[];
+            derivative_low: number[];
+            derivative_high: number[];
+            edf: number;
+            smoothing: number;
+            aic_linear: number;
+            aic_spline: number;
+            delta_aic: number;
+            change_z: number;
+            /** @enum {string} */
+            shape: "linear" | "accelerating" | "decelerating" | "nonlinear";
         };
         /** NoteRequest */
         NoteRequest: {
@@ -1402,6 +1632,13 @@ export interface components {
             case_id: string;
             levels: components["schemas"]["ProfileLevelResponse"][];
         };
+        /** QualityFlag */
+        QualityFlag: {
+            code: string;
+            details?: {
+                [key: string]: unknown;
+            };
+        };
         /** QualityResponse */
         QualityResponse: {
             gap_fraction: number;
@@ -1460,6 +1697,14 @@ export interface components {
             generated_at: string;
             label: string;
         };
+        /** RadarScanRequest */
+        RadarScanRequest: {
+            series: Record<string, never>[];
+        };
+        /** RefreshRequest */
+        RefreshRequest: {
+            token: string;
+        };
         /** RegionResponse */
         RegionResponse: {
             id: string;
@@ -1470,6 +1715,13 @@ export interface components {
             status: string;
             geometry?: Record<string, never> | null;
             ring?: number[] | null;
+            /** @default  */
+            name_uk?: string;
+        };
+        /** RegisterRequest */
+        RegisterRequest: {
+            username: string;
+            password: string;
         };
         /** RelatedResponse */
         RelatedResponse: {
@@ -1506,6 +1758,49 @@ export interface components {
             year: number;
             note: string;
         };
+        /** SeriesMeta */
+        SeriesMeta: {
+            variable_id: string;
+            concept_id: string;
+            dataset_id: string;
+            dataset_version: string;
+            units: string;
+            region_id: string;
+            /** @default false */
+            ratio_scale?: boolean;
+            /**
+             * @default none
+             * @enum {string}
+             */
+            transform?: "none" | "log";
+            /**
+             * @default symmetric
+             * @enum {string}
+             */
+            distribution?: "symmetric" | "skewed" | "zero_inflated";
+            region_area_km2?: number | null;
+            /**
+             * @default monthly
+             * @enum {string}
+             */
+            frequency?: "daily" | "monthly";
+            /**
+             * @default mean
+             * @enum {string}
+             */
+            aggregation?: "mean" | "sum" | "max" | "min";
+            /** @default 10 */
+            min_years_for_trend?: number;
+        };
+        /** SeriesPayload */
+        SeriesPayload: {
+            dates: string[];
+            values: (number | null)[];
+            anomalies: (number | null)[];
+            trend: number[];
+            ci_low: number[];
+            ci_high: number[];
+        };
         /** SessionReadResponse */
         SessionReadResponse: {
             user_id: string;
@@ -1514,6 +1809,8 @@ export interface components {
         /** SessionResponse */
         SessionResponse: {
             token: string;
+            /** @description Unix seconds when the token stops working; refresh before then. */
+            expires_at: number;
         };
         /** ShareResponse */
         ShareResponse: {
@@ -1525,6 +1822,13 @@ export interface components {
             title: string;
             case_ids: string[];
             joined: boolean;
+        };
+        /** StlResult */
+        StlResult: {
+            dates: string[];
+            trend: (number | null)[];
+            seasonal: (number | null)[];
+            resid: (number | null)[];
         };
         /** StoryRequest */
         StoryRequest: {
@@ -1572,6 +1876,60 @@ export interface components {
             text: string;
             demo_id: string | null;
         };
+        /** TrendResult */
+        TrendResult: {
+            meta: components["schemas"]["SeriesMeta"];
+            options: components["schemas"]["AnalysisOptions"];
+            period_used: [
+                string,
+                string
+            ] | null;
+            n_used: number;
+            years_of_data: number;
+            tests: components["schemas"]["TrendTest"][];
+            primary_slope_per_decade: number | null;
+            primary_ci95: [
+                number,
+                number
+            ] | null;
+            /** @enum {string} */
+            direction: "increasing" | "decreasing" | "none";
+            magnitude: components["schemas"]["Magnitude"] | null;
+            years_to_detect: number | null;
+            years_to_detect_remaining: number | null;
+            flags: components["schemas"]["QualityFlag"][];
+            series_out: components["schemas"]["SeriesPayload"];
+            verdict: components["schemas"]["Verdict"];
+            nonlinear?: components["schemas"]["NonlinearResult"] | null;
+            changepoints?: components["schemas"]["Changepoint"][];
+            seasonal_breakdown?: components["schemas"]["MonthTrend"][];
+            influence?: components["schemas"]["JackknifeResult"] | null;
+            bootstrap?: components["schemas"]["BootstrapResult"] | null;
+            stl?: components["schemas"]["StlResult"] | null;
+            ai_opinion?: components["schemas"]["AiOpinion"] | null;
+            summary_text_facts?: {
+                [key: string]: unknown;
+            };
+            /** @default 0.1.0 */
+            analytics_version?: string;
+            model_versions?: {
+                [key: string]: string;
+            };
+        };
+        /** TrendTest */
+        TrendTest: {
+            /** @enum {string} */
+            method: "ols_ar1" | "ols_ar1_annual" | "mk_ar1" | "sen" | "glsar";
+            slope_per_decade: number | null;
+            ci95: [
+                number,
+                number
+            ] | null;
+            p_value: number | null;
+            statistic: number | null;
+            n: number;
+            n_eff?: number | null;
+        };
         /** TypologyClusterResponse */
         TypologyClusterResponse: {
             id: string;
@@ -1595,6 +1953,17 @@ export interface components {
             city_slope: number;
             ring_slope: number;
             difference: number;
+        };
+        /** Verdict */
+        Verdict: {
+            /** @enum {string} */
+            code: "proven" | "strong" | "likely" | "suspicious" | "no_evidence" | "inadmissible";
+            strength: number;
+            /** @default verdict_rules_v0 */
+            ruleset?: string;
+            /** @enum {string} */
+            direction: "increasing" | "decreasing" | "none";
+            caveats?: string[];
         };
         /** WarmResponse */
         WarmResponse: {
@@ -1807,6 +2176,45 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CaseResponse"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        status_code: number;
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                    };
+                };
+            };
+        };
+    };
+    ApiV1AnalyzeAnalyze: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalyzeSeriesRequest"];
+            };
+        };
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrendResult"];
                 };
             };
             /** @description Bad request syntax or unsupported method */
@@ -2713,6 +3121,43 @@ export interface operations {
             };
         };
     };
+    ApiV1EducationDemosDemoIdProgressDemoProgress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                demo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoProgressResponse"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        status_code: number;
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                    };
+                };
+            };
+        };
+    };
     ApiV1EducationDemosDemoIdStepsCompleteStep: {
         parameters: {
             query?: never;
@@ -3095,6 +3540,84 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionResponse"];
+                };
+            };
+        };
+    };
+    ApiV1SessionRegisterRegister: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Document created, URL follows */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionResponse"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        status_code: number;
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                    };
+                };
+            };
+        };
+    };
+    ApiV1SessionRefreshRefreshSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshRequest"];
+            };
+        };
+        responses: {
+            /** @description Document created, URL follows */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionResponse"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        status_code: number;
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                    };
                 };
             };
         };
@@ -3536,6 +4059,45 @@ export interface operations {
             };
         };
     };
+    ApiV1RadarScanScanRadar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RadarScanRequest"];
+            };
+        };
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        status_code: number;
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                    };
+                };
+            };
+        };
+    };
     ApiV1CasesCaseIdStoryCaseStory: {
         parameters: {
             query?: {
@@ -3679,6 +4241,45 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GridProductResponse"][];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        status_code: number;
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                    };
+                };
+            };
+        };
+    };
+    ApiV1TilesProductsComputeProduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Document created, URL follows */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GridProductResponse"];
                 };
             };
             /** @description Bad request syntax or unsupported method */

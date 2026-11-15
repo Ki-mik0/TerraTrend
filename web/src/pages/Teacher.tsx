@@ -1,161 +1,198 @@
 import { useState } from "react";
-import { Card, Chip } from "@heroui/react";
-import { Users, Award, CheckCircle2, AlertCircle, Search, ChevronRight, BarChart2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@heroui/react";
+import { Copy, Inbox, Link2, PlusCircle, Users } from "lucide-react";
+import { api } from "../api/client";
+import { call, failureText } from "../api/http";
+import { Chip, EmptyState, Field, Input, Notice, Page, PageHeader, Panel, SectionTitle, Select, VerdictBadge } from "../components/ui";
+import { useNames } from "../hooks/useNames";
+import { useTr } from "../i18n";
+import { useStore } from "../store/useStore";
 
-const studentSubmissions = [
-    {
-        id: "st-01",
-        name: "Alexandr Melenko",
-        group: "Group 341(А)",
-        activeCase: "One Process, Two Directions",
-        score: "98 / 100",
-        status: "Verified",
-        submittedAt: "2 hours ago"
-    },
-    {
-        id: "st-02",
-        name: "Olena Nosova",
-        group: "Group 341(А)",
-        activeCase: "Arctic Amplification",
-        score: "92 / 100",
-        status: "Verified",
-        submittedAt: "5 hours ago"
-    },
-    {
-        id: "st-03",
-        name: "Max Olenych",
-        group: "Group 341(В)",
-        activeCase: "The Urban Heat Island Spike",
-        score: "Pending",
-        status: "Needs Review",
-        submittedAt: "1 day ago"
-    }
-];
+function StepBadge({ n }: { n: number }) {
+  return <span className="bg-gradient-brand flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white">{n}</span>;
+}
 
 export function Teacher() {
-    const [searchQuery, setSearchQuery] = useState("");
+  const tr = useTr();
+  const names = useNames();
+  const token = useStore((state) => state.token);
+  const role = useStore((state) => state.role);
+  const client = useQueryClient();
+  const teaches = role === "teacher" || role === "admin";
+  const [title, setTitle] = useState("");
+  const [picked, setPicked] = useState<string[]>([]);
+  const [studentIds, setStudentIds] = useState("");
+  const [assignmentId, setAssignmentId] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    const filteredStudents = studentSubmissions.filter(student =>
-        student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        student.group.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  const myCases = useQuery({ queryKey: ["cases", token], enabled: Boolean(token && teaches), queryFn: () => call(api.GET("/api/v1/cases")) });
+  const assignments = useQuery({
+    queryKey: ["assignments", token],
+    enabled: Boolean(token && teaches),
+    queryFn: () => call(api.GET("/api/v1/education/assignments")),
+  });
+  const selected = assignmentId || assignments.data?.[0]?.id || "";
+  const detail = useQuery({
+    queryKey: ["assignment", selected],
+    enabled: Boolean(token && teaches && selected),
+    queryFn: () => call(api.GET("/api/v1/education/assignments/{assignment_id}", { params: { path: { assignment_id: selected } } })),
+  });
+  const submissions = useQuery({
+    queryKey: ["submissions", selected],
+    enabled: Boolean(token && teaches && selected),
+    queryFn: () => call(api.GET("/api/v1/education/submissions", { params: { query: { assignment_id: selected } } })),
+  });
 
+  const create = useMutation({
+    mutationFn: () =>
+      call(
+        api.POST("/api/v1/education/assignments", {
+          body: { title, case_ids: picked, student_ids: studentIds.split(",").map((item) => item.trim()).filter(Boolean) },
+        }),
+      ),
+    onSuccess: async (created) => {
+      setError(null);
+      setTitle("");
+      setPicked([]);
+      setStudentIds("");
+      setAssignmentId(created.id);
+      await client.invalidateQueries({ queryKey: ["assignments"] });
+    },
+    onError: (reason) => setError(failureText(reason)),
+  });
+  const share = useMutation({
+    mutationFn: () => call(api.POST("/api/v1/education/assignments/{assignment_id}/share", { params: { path: { assignment_id: selected } } })),
+    onSuccess: async () => {
+      setError(null);
+      setCopied(false);
+      await client.invalidateQueries({ queryKey: ["assignment", selected] });
+    },
+    onError: (reason) => setError(failureText(reason)),
+  });
+
+  const shareToken = share.data?.token || detail.data?.share_token;
+  const shareLink = shareToken ? `${window.location.origin}/join/${shareToken}` : null;
+
+  if (!teaches) {
     return (
-        <div className="flex flex-col w-full min-h-[calc(100vh-73px)] p-6 md:p-10 max-w-7xl mx-auto">
-
-            {/* Шапка страницы */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                <div>
-                    <div className="flex items-center gap-2 mb-2">
-                        <Users className="text-primary" size={26} />
-                        <h1 className="text-3xl font-bold tracking-tight text-foreground">Teacher & Mentor Dashboard</h1>
-                    </div>
-                    <p className="text-default-500 text-base max-w-2xl">
-                        Monitor student investigations, review submitted evidence protocols, and track analytical competencies.
-                    </p>
-                </div>
-
-                <Chip variant="soft" className="bg-primary/10 text-primary font-medium px-4 py-2">
-                    Admin / Mentor Mode
-                </Chip>
-            </div>
-
-            {/* Карточки метрик */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <Card className="bg-default-50 border border-divider shadow-sm">
-                    <Card.Content className="p-6 flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                            <Users size={24} />
-                        </div>
-                        <div>
-                            <span className="text-xs text-default-400 block font-medium uppercase tracking-wider">Active Detectives</span>
-                            <span className="text-2xl font-bold text-foreground">34 Students</span>
-                        </div>
-                    </Card.Content>
-                </Card>
-
-                <Card className="bg-default-50 border border-divider shadow-sm">
-                    <Card.Content className="p-6 flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-success/10 flex items-center justify-center text-success shrink-0">
-                            <Award size={24} />
-                        </div>
-                        <div>
-                            <span className="text-xs text-default-400 block font-medium uppercase tracking-wider">Average Score</span>
-                            <span className="text-2xl font-bold text-foreground">94.5 / 100</span>
-                        </div>
-                    </Card.Content>
-                </Card>
-
-                <Card className="bg-default-50 border border-divider shadow-sm">
-                    <Card.Content className="p-6 flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-warning/10 flex items-center justify-center text-warning shrink-0">
-                            <BarChart2 size={24} />
-                        </div>
-                        <div>
-                            <span className="text-xs text-default-400 block font-medium uppercase tracking-wider">Completion Rate</span>
-                            <span className="text-2xl font-bold text-foreground">88% Solved</span>
-                        </div>
-                    </Card.Content>
-                </Card>
-            </div>
-
-            {/* Поиск и таблица студентов */}
-            <Card className="bg-default-50 border border-divider shadow-sm mb-12">
-                <div className="p-6 border-b border-divider flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <h3 className="font-bold text-lg text-foreground">Student Submissions & Progress</h3>
-
-                    <div className="relative w-full sm:w-72">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-default-400" size={16} />
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search student or group..."
-                            className="w-full pl-9 pr-4 py-2 rounded-xl border border-divider bg-background text-foreground text-sm focus:ring-2 focus:ring-primary outline-none"
-                        />
-                    </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                        <tr className="border-b border-divider text-xs text-default-400 uppercase bg-default-100/50">
-                            <th className="p-4 font-semibold">Student Name</th>
-                            <th className="p-4 font-semibold">Active Investigation</th>
-                            <th className="p-4 font-semibold">Score</th>
-                            <th className="p-4 font-semibold">Status</th>
-                            <th className="p-4 font-semibold">Submitted</th>
-                            <th className="p-4 text-right font-semibold">Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody className="divide-y divide-divider text-sm">
-                        {filteredStudents.map((student) => (
-                            <tr key={student.id} className="hover:bg-default-100/40 transition-colors">
-                                <td className="p-4 font-medium text-foreground">
-                                    {student.name}
-                                    <span className="block text-xs text-default-400">{student.group}</span>
-                                </td>
-                                <td className="p-4 text-default-600">{student.activeCase}</td>
-                                <td className="p-4 font-bold text-foreground">{student.score}</td>
-                                <td className="p-4">
-                                    <Chip variant="soft" className={student.status === 'Verified' ? 'bg-success/20 text-success text-xs' : 'bg-warning/20 text-warning text-xs'}>
-                                        {student.status === 'Verified' ? <CheckCircle2 size={12} className="inline mr-1" /> : <AlertCircle size={12} className="inline mr-1" />}
-                                        {student.status}
-                                    </Chip>
-                                </td>
-                                <td className="p-4 text-default-400 text-xs">{student.submittedAt}</td>
-                                <td className="p-4 text-right">
-                                    <button className="p-2 rounded-lg hover:bg-default-200/60 transition-colors text-primary inline-flex items-center gap-1 font-medium text-xs">
-                                        Review <ChevronRight size={14} />
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>
-            </Card>
-
-        </div>
+      <Page>
+        <PageHeader icon={<Users size={22} />} title={tr("Кабінет вчителя", "Teacher desk")} subtitle={tr("Завдання, посилання класу і відповіді учнів.", "Assignments, class links and student answers.")} />
+        <EmptyState
+          icon={<Users size={28} />}
+          title={tr("Цей кабінет — для вчителя", "This desk is for teachers")}
+          text={tr("Учень відкриває завдання за посиланням класу, яке дає вчитель.", "A student opens an assignment from the class link the teacher shares.")}
+        />
+      </Page>
     );
+  }
+
+  return (
+    <Page>
+      <PageHeader
+        icon={<Users size={22} />}
+        eyebrow={tr("Клас", "Class")}
+        title={tr("Кабінет вчителя", "Teacher desk")}
+        subtitle={tr("Створи завдання зі своїх справ, поділись посиланням і читай відповіді.", "Build an assignment from your cases, share the link and read the answers.")}
+        actions={<Chip tone="accent">{assignments.data?.length ?? 0} {tr("завдань", "assignments")}</Chip>}
+      />
+      <Notice text={error || (assignments.isError ? failureText(assignments.error) : null)} />
+
+      <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Panel className="flex flex-col gap-4">
+          <SectionTitle icon={<StepBadge n={1} />}>{tr("Створи завдання", "Create an assignment")}</SectionTitle>
+          <Field label={tr("Назва", "Title")}>
+            <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder={tr("Посуха на півдні", "Drought in the south")} />
+          </Field>
+          <Field label={tr("Справи завдання", "Cases")} hint={tr("Порожньо — учень бере будь-яку свою справу.", "Leave empty — a student uses any own case.")}>
+            <div className="flex max-h-48 flex-col gap-1 overflow-auto rounded-xl border border-[var(--glass-border)] p-2">
+              {(myCases.data ?? []).map((item) => (
+                <label key={item.id} className="flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-default">
+                  <span className="flex items-center gap-2 text-foreground">
+                    <input
+                      type="checkbox"
+                      className="accent-[var(--color-accent)]"
+                      checked={picked.includes(item.id)}
+                      onChange={(event) => setPicked((current) => (event.target.checked ? [...current, item.id] : current.filter((id) => id !== item.id)))}
+                    />
+                    {names.variable(item.variable_id)} · {names.region(item.region_id)}
+                  </span>
+                  <VerdictBadge code={item.verdict?.code} direction={item.verdict?.direction} />
+                </label>
+              ))}
+              {myCases.data?.length === 0 && (
+                <p className="p-2 text-xs text-muted">
+                  {tr("Спершу відкрий справу в ", "Open a case first in ")}
+                  <Link to="/explore" className="text-accent">{tr("Розслідуванні", "Explore")}</Link>.
+                </p>
+              )}
+            </div>
+          </Field>
+          <Field label={tr("Id учнів через кому", "Student ids, comma separated")} hint={tr("Необов’язково: учні можуть приєднатися за посиланням.", "Optional: students can join by the link.")}>
+            <Input value={studentIds} onChange={(event) => setStudentIds(event.target.value)} />
+          </Field>
+          <Button variant="primary" onClick={() => create.mutate()} isDisabled={!title.trim() || create.isPending}>
+            <PlusCircle size={16} /> {tr("Створити", "Create")}
+          </Button>
+        </Panel>
+
+        <Panel className="flex flex-col gap-4">
+          <SectionTitle icon={<StepBadge n={2} />}>{tr("Поділись з класом", "Share with the class")}</SectionTitle>
+          <Field label={tr("Завдання", "Assignment")}>
+            <Select value={selected} onChange={(event) => setAssignmentId(event.target.value)} disabled={!assignments.data?.length}>
+              {(assignments.data ?? []).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+            </Select>
+          </Field>
+          {detail.data && (
+            <div className="flex flex-col gap-2 text-sm">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-muted">{tr("Справи:", "Cases:")}</span>
+                {detail.data.case_ids.length
+                  ? detail.data.case_ids.map((id) => <Link key={id} to={`/case/${id}`}><Chip tone="accent">{id}</Chip></Link>)
+                  : <span className="text-muted">{tr("будь-яка справа учня", "any case of the student")}</span>}
+              </div>
+              <p className="text-muted">
+                {tr("Учні:", "Students:")} <span className="text-foreground">{detail.data.student_ids.join(", ") || "—"}</span>
+              </p>
+            </div>
+          )}
+          <Button variant="secondary" onClick={() => share.mutate()} isDisabled={!selected || share.isPending}>
+            <Link2 size={16} /> {shareToken ? tr("Видати нове посилання", "Issue a new link") : tr("Видати посилання класу", "Issue a class link")}
+          </Button>
+          {shareLink && (
+            <div className="flex items-center gap-2 rounded-xl border border-accent/30 bg-accent-soft p-2 pl-3">
+              <code className="min-w-0 flex-1 truncate text-sm text-foreground">{shareLink}</code>
+              <Button size="sm" variant={copied ? "secondary" : "primary"} onClick={() => void navigator.clipboard?.writeText(shareLink).then(() => setCopied(true))}>
+                <Copy size={14} /> {copied ? tr("Скопійовано", "Copied") : tr("Копіювати", "Copy")}
+              </Button>
+            </div>
+          )}
+        </Panel>
+      </div>
+
+      <Panel>
+        <SectionTitle icon={<StepBadge n={3} />} action={<Chip>{submissions.data?.length ?? 0}</Chip>}>
+          {tr("Відповіді учнів", "Student answers")}
+        </SectionTitle>
+        <Notice text={submissions.isError ? failureText(submissions.error) : null} />
+        {(submissions.data ?? []).length > 0 ? (
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {(submissions.data ?? []).map((item) => (
+              <div key={item.id} className="rounded-xl border border-[var(--glass-border)] p-4">
+                <div className="mb-2 flex items-center justify-between gap-2 text-sm">
+                  <span className="font-semibold text-foreground">{item.student_id}</span>
+                  <Link to={`/case/${item.case_id}`} className="text-accent hover:underline">{item.case_id}</Link>
+                </div>
+                <p className="whitespace-pre-wrap text-sm text-muted">{item.text}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState icon={<Inbox size={28} />} title={tr("Відповідей ще немає", "No answers yet")} text={tr("Вони з’являться, коли учні здадуть завдання за посиланням.", "They appear once students hand in through the link.")} />
+        )}
+      </Panel>
+    </Page>
+  );
 }

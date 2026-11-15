@@ -1,151 +1,203 @@
 import { useNavigate } from "react-router-dom";
-import { Button, Card, Chip } from "@heroui/react";
-import { ArrowRight, Activity, Globe, Zap } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Button } from "@heroui/react";
+import {
+  Activity,
+  ArrowRight,
+  Building2,
+  Clock,
+  FlaskConical,
+  GitBranch,
+  Layers,
+  ScanSearch,
+  Sparkles,
+  Split,
+  Users,
+} from "lucide-react";
+import type { ReactNode } from "react";
+import { api } from "../api/client";
+import { call, failureText } from "../api/http";
+import { Chip, Notice, Panel, Skeleton, Slope, VerdictBadge } from "../components/ui";
+import { useNames } from "../hooks/useNames";
+import { useTr } from "../i18n";
+import { useStore } from "../store/useStore";
 
-const demoCases = [
-    {
-        id: "stratosphere",
-        title: "One Process, Two Directions",
-        description: "Troposphere warms, stratosphere cools. A classic fingerprint of greenhouse gases.",
-        tag: "Atmosphere",
-        image: "https://images.unsplash.com/photo-1536244636800-a3f74db0f3cf?q=80&w=600&auto=format&fit=crop"
-    },
-    {
-        id: "urban-heat",
-        title: "The Urban Heat Island",
-        description: "Does the city warm faster than its suburbs? Comparing MODIS Land Surface Temp at night.",
-        tag: "Cities",
-        image: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=600&auto=format&fit=crop"
-    },
-    {
-        id: "arctic-amplification",
-        title: "Arctic Amplification",
-        description: "The strongest evidence of warming. All corroborating sources agree on the trend.",
-        tag: "Cryosphere",
-        image: "https://images.unsplash.com/photo-1542332213-9b5a5a3fad35?q=80&w=600&auto=format&fit=crop"
-    },
-    {
-        id: "enso-alibi",
-        title: "Is it just El Niño?",
-        description: "How the 'Alibi' tool filters out natural variability to reveal the true underlying trend.",
-        tag: "Oceans",
-        image: "https://images.unsplash.com/photo-1582967788606-a171c1080cb0?q=80&w=600&auto=format&fit=crop"
-    }
-];
+/** One icon per evidence tool of a demo case. */
+const TOOL_ICONS: Record<string, ReactNode> = {
+  vertical_profile: <Layers size={18} />,
+  split: <Split size={18} />,
+  witnesses: <Users size={18} />,
+  alibi: <ScanSearch size={18} />,
+  urban_contrast: <Building2 size={18} />,
+  years_to_proof: <Clock size={18} />,
+  story: <Sparkles size={18} />,
+};
 
 export function Home() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const token = useStore((state) => state.token);
+  const language = useStore((state) => state.language);
+  const tr = useTr();
+  const names = useNames();
+  const demos = useQuery({
+    queryKey: ["demos", language, token],
+    enabled: Boolean(token),
+    queryFn: () => call(api.GET("/api/v1/education/demos", { params: { query: { lang: language } } })),
+  });
+  const radar = useQuery({
+    queryKey: ["radar", "strongest", 1, language, "teaser"],
+    queryFn: () => call(api.GET("/api/v1/radar", { params: { query: { feed: "strongest", lang: language, page: 1, page_size: 3 } } })),
+  });
 
-    return (
-        <div className="flex flex-col w-full">
-            <section className="relative flex flex-col items-center justify-center pt-24 pb-32 px-6 text-center overflow-hidden">
-                <div className="absolute top-0 -z-10 w-full h-full overflow-hidden opacity-30 dark:opacity-20 pointer-events-none">
-                    <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[50%] rounded-full bg-blue-500/30 blur-[120px]" />
-                    <div className="absolute top-[20%] -right-[10%] w-[50%] h-[60%] rounded-full bg-emerald-500/20 blur-[120px]" />
-                </div>
-
-                <Chip variant="soft" className="mb-6 font-medium text-emerald-500 bg-emerald-500/10">
-                    NASA Space Apps Challenge 2024
-                </Chip>
-
-                <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 max-w-4xl text-foreground">
-                    TerraTrend <span className="bg-gradient-to-r from-blue-500 to-emerald-500 bg-clip-text text-transparent">Detective</span>
-                </h1>
-
-                <p className="text-xl md:text-2xl text-default-500 max-w-3xl mb-10 leading-relaxed">
-                    Investigate significant changes in the Earth's interconnected system.
-                    Gather evidence, cross-validate sources, and expose the true climate trends.
-                </p>
-
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <Button
-                        onClick={() => navigate('/explore')}
-                        variant="primary"
-                        className="font-medium px-8 py-6 text-lg flex items-center gap-2 shadow-lg shadow-primary/30 rounded-xl"
-                    >
-                        Start Investigation <ArrowRight size={18} />
-                    </Button>
-                    <Button
-                        onClick={() => navigate('/radar')}
-                        variant="outline"
-                        className="font-medium px-8 py-6 text-lg flex items-center gap-2 rounded-xl"
-                    >
-                        <Activity size={18} /> Open Trend Radar
-                    </Button>
-                </div>
-            </section>
-
-            <section className="px-6 py-16 max-w-7xl mx-auto w-full">
-                <div className="flex items-center gap-3 mb-8">
-                    <h2 className="text-3xl font-bold text-foreground">Featured Case Studies</h2>
-                </div>
-
-                <p className="text-default-500 mb-8 max-w-2xl text-lg">
-                    Dive into pre-configured investigations. These cases demonstrate how to find opposing trends, test for robustness, and verify environmental alibis.
-                </p>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {demoCases.map((demo) => (
-                        <Card
-                            key={demo.id}
-                            className="w-full bg-default-50 hover:bg-default-100 transition-colors cursor-pointer border-none overflow-hidden"
-                            onClick={() => navigate(`/explore?case=${demo.id}`)}
-                        >
-                            <Card.Header className="absolute z-10 top-1 flex-col items-start p-0">
-                                <Chip variant="soft" className="m-3 text-xs">
-                                    {demo.tag}
-                                </Chip>
-                            </Card.Header>
-
-                            <img
-                                alt={demo.title}
-                                className="z-0 w-full h-[200px] object-cover"
-                                src={demo.image}
-                            />
-
-                            <Card.Content className="pt-4 pb-2 px-4">
-                                <h3 className="font-bold text-lg mb-2 leading-tight">{demo.title}</h3>
-                                <p className="text-default-500 text-sm line-clamp-3">
-                                    {demo.description}
-                                </p>
-                            </Card.Content>
-                            <Card.Footer className="px-4 pb-4 pt-0 justify-end">
-                <span className="text-primary text-sm font-medium flex items-center gap-1">
-                  Examine Case <ArrowRight size={14} />
-                </span>
-                            </Card.Footer>
-                        </Card>
-                    ))}
-                </div>
-            </section>
-
-            <section className="px-6 py-16 mb-20 max-w-7xl mx-auto w-full">
-                <Card className="w-full bg-gradient-to-br from-default-100 to-default-50 border border-divider shadow-sm">
-                    <Card.Content className="p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8">
-                        <div className="max-w-xl text-left">
-                            <div className="flex items-center gap-3 mb-4">
-                                <Zap className="text-warning" size={24} />
-                                <h2 className="text-2xl font-bold">Live Anomaly Patrol</h2>
-                            </div>
-                            <p className="text-default-600 text-lg mb-6">
-                                Our system constantly scans thousands of region-variable pairs to find the most significant accelerating and opposing trends worldwide.
-                            </p>
-                            <Button onClick={() => navigate('/radar')} variant="secondary" className="font-medium px-6 flex items-center gap-2">
-                                View Global Pulse <Activity size={16} />
-                            </Button>
-                        </div>
-
-                        <div className="relative w-48 h-48 rounded-full border-2 border-primary/20 flex items-center justify-center shrink-0">
-                            <div className="absolute w-32 h-32 rounded-full border-2 border-primary/40 animate-ping" style={{ animationDuration: '3s' }} />
-                            <div className="absolute w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
-                                <Globe className="text-primary" size={32} />
-                            </div>
-                            <div className="absolute top-8 right-10 w-3 h-3 rounded-full bg-danger shadow-[0_0_10px_rgba(243,18,96,0.8)]" />
-                            <div className="absolute bottom-12 left-8 w-2 h-2 rounded-full bg-warning shadow-[0_0_10px_rgba(245,165,36,0.8)]" />
-                        </div>
-                    </Card.Content>
-                </Card>
-            </section>
+  return (
+    <div className="flex w-full flex-col">
+      <section className="relative flex flex-col items-center justify-center overflow-hidden px-6 pt-24 pb-28 text-center">
+        <span className="mb-6 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-500">
+          NASA Space Apps Challenge 2024
+        </span>
+        <h1 className="mb-6 max-w-4xl text-5xl font-bold tracking-tight text-foreground md:text-7xl">
+          TerraTrend <span className="bg-gradient-to-r from-blue-500 to-emerald-500 bg-clip-text text-transparent">Detective</span>
+        </h1>
+        <p className="mb-10 max-w-3xl text-xl leading-relaxed text-muted md:text-2xl">
+          {tr(
+            "Розслідуй значущі зміни у взаємопов’язаній системі Землі. Збирай докази, звіряй джерела і відрізняй справжні тренди від випадковості.",
+            "Investigate significant changes in the Earth's interconnected system. Gather evidence, cross-validate sources, and expose the true climate trends.",
+          )}
+        </p>
+        <div className="flex flex-col gap-4 sm:flex-row">
+          <Button onClick={() => navigate("/explore")} variant="primary" className="flex items-center gap-2 rounded-xl px-8 py-6 text-lg font-medium shadow-lg shadow-brand-from/30">
+            {tr("Почати розслідування", "Start investigation")} <ArrowRight size={18} />
+          </Button>
+          <Button onClick={() => navigate("/radar")} variant="outline" className="flex items-center gap-2 rounded-xl px-8 py-6 text-lg font-medium">
+            <Activity size={18} /> {tr("Відкрити радар", "Open Trend Radar")}
+          </Button>
         </div>
-    );
+      </section>
+
+      <section className="mx-auto w-full max-w-7xl px-4 pb-4 sm:px-6 lg:px-10">
+        <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-accent">{tr("Як це працює", "How it works")}</p>
+        <h2 className="mb-6 text-3xl font-bold tracking-tight text-foreground">{tr("Три кроки до відповіді", "Three steps to an answer")}</h2>
+        <ol className="grid grid-cols-1 gap-5 md:grid-cols-3">
+          {[
+            [
+              tr("Обери що і де", "Pick what and where"),
+              tr("Наприклад, температуру повітря на півночі України за 2000–2024 роки. Дані беремо з супутників NASA.", "For example, air temperature in northern Ukraine over 2000–2024. The data comes from NASA satellites."),
+            ],
+            [
+              tr("Система перевіряє докази", "The system checks the evidence"),
+              tr("Не один тест, а шість: чи не випадковість, чи бачать те саме інші джерела, чи не винне Ель-Ніньйо тощо.", "Not one test but six: is it chance, do other sources agree, is El Niño to blame, and so on."),
+            ],
+            [
+              tr("Отримай вирок простими словами", "Get a verdict in plain words"),
+              tr("Від «доведено» до «немає доказів» — з поясненням, чому, і з картою, де саме змінюється.", "From “proven” to “no evidence” — with the reasons and a map of where it changes."),
+            ],
+          ].map(([title, text], index) => (
+            <li key={title}>
+              <Panel className="h-full">
+                <span className="bg-gradient-brand mb-4 flex h-9 w-9 items-center justify-center rounded-full font-semibold text-white">{index + 1}</span>
+                <h3 className="mb-2 text-lg font-semibold text-foreground">{title}</h3>
+                <p className="text-muted">{text}</p>
+              </Panel>
+            </li>
+          ))}
+        </ol>
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <Button variant="primary" onClick={() => navigate("/explore?variable=merra2_t2m&region=ukraine_north&from=2000&to=2024")}>
+            {tr("Спробувати на прикладі", "Try an example")} <ArrowRight size={16} />
+          </Button>
+          <span className="text-sm text-muted">{tr("Температура повітря на півночі України — реальні дані NASA.", "Air temperature in northern Ukraine — real NASA data.")}</span>
+        </div>
+      </section>
+
+      <section className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-10">
+        <div className="mb-8 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-accent">{tr("Навчання", "Learn")}</p>
+            <h2 className="text-3xl font-bold tracking-tight text-foreground">{tr("Демо-справи", "Demo cases")}</h2>
+            <p className="mt-2 max-w-2xl text-lg text-muted">
+              {tr("Сім справ, які крок за кроком показують, як працює кожен інструмент доказів.", "Seven cases that show, step by step, how each evidence tool works.")}
+            </p>
+          </div>
+          <Button variant="ghost" onClick={() => navigate("/learn")} className="self-start md:self-auto">
+            <FlaskConical size={16} /> {tr("Уся лабораторія", "Whole lab")}
+          </Button>
+        </div>
+        {demos.isError && <Notice text={failureText(demos.error)} />}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {demos.isLoading || !demos.data
+            ? Array.from({ length: 4 }, (_, index) => <Skeleton key={index} className="h-52" />)
+            : demos.data.map((demo, index) => (
+                <Panel
+                  key={demo.id}
+                  as="button"
+                  type="button"
+                  interactive
+                  className="flex flex-col gap-3"
+                  onClick={() => navigate(`/learn?demo=${demo.id}`)}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="bg-gradient-brand flex h-9 w-9 items-center justify-center rounded-xl text-white">
+                      {TOOL_ICONS[demo.tool] ?? <GitBranch size={18} />}
+                    </span>
+                    <span className="text-xs font-medium tabular-nums text-muted">{String(index + 1).padStart(2, "0")}</span>
+                  </div>
+                  <h3 className="text-lg font-semibold leading-snug text-foreground">{demo.title}</h3>
+                  <p className="line-clamp-3 flex-1 text-sm text-muted">{demo.summary}</p>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted">
+                      {demo.steps.length} {tr("кроки", "steps")}
+                    </span>
+                    <span className="flex items-center gap-1 font-medium text-accent">
+                      {tr("Пройти", "Start")} <ArrowRight size={14} />
+                    </span>
+                  </div>
+                </Panel>
+              ))}
+        </div>
+      </section>
+
+      <section className="mx-auto mb-20 w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-10">
+        <Panel className="relative overflow-hidden p-6 md:p-10">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] lg:items-center">
+            <div>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-accent">{tr("Наживо", "Live")}</p>
+              <h2 className="mb-3 text-3xl font-bold tracking-tight text-foreground">{tr("Радар трендів", "Trend radar")}</h2>
+              <p className="mb-6 text-lg text-muted">
+                {tr(
+                  "Система сама патрулює планету і відбирає найсильніші тренди після поправки FDR. Відкрий картку, щоб розслідувати.",
+                  "The system patrols the planet and picks the strongest trends after the FDR correction. Open a card to investigate.",
+                )}
+              </p>
+              <Button variant="secondary" onClick={() => navigate("/radar")}>
+                <Activity size={16} /> {tr("До радару", "Open the radar")}
+              </Button>
+            </div>
+            <div className="flex flex-col gap-3">
+              {radar.isLoading || !radar.data
+                ? Array.from({ length: 3 }, (_, index) => <Skeleton key={index} className="h-20" />)
+                : radar.data.items.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => navigate(`/explore?${new URLSearchParams({ variable: item.variable_id, region: item.region_id, season: item.season }).toString()}`)}
+                      className="ring-gradient flex items-center justify-between gap-4 rounded-xl border border-[var(--glass-border)] bg-surface/50 px-4 py-3 text-left transition-colors hover:bg-surface"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <VerdictBadge code={item.verdict_level} direction={item.direction} />
+                          <Chip>{names.season(item.season)}</Chip>
+                        </div>
+                        <p className="mt-1 truncate font-medium text-foreground">
+                          {names.variable(item.variable_id)} · {names.region(item.region_id)}
+                        </p>
+                      </div>
+                      <Slope value={item.slope_decade} unit={`${names.units(item.variable_id)} ${tr("за 10 р.", "/dec")}`.trim()} className="text-lg" />
+                    </button>
+                  ))}
+            </div>
+          </div>
+        </Panel>
+      </section>
+    </div>
+  );
 }
