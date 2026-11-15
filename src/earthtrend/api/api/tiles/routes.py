@@ -101,6 +101,7 @@ def tiles_router(service: TileService) -> Router:
                 bbox=list(item.bbox),
                 resolution=item.resolution,
                 vmax=item.vmax,
+                frame_vmax=item.frame_vmax,
                 years=list(item.years),
                 products=sorted(PRODUCTS),
                 palettes=sorted(PALETTES),

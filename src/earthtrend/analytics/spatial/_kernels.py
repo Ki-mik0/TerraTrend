@@ -38,6 +38,7 @@ def _one_cell(
     base: np.ndarray,
     year_start: np.ndarray,
     season_of_month: np.ndarray,
+    season_need: np.ndarray,
     n_eff_min: float,
     annual_min_months: int,
     z_crit: float,
@@ -128,7 +129,7 @@ def _one_cell(
                 seas[season_of_month[month0[i]]] += 1.0
         ok = cnt >= annual_min_months
         for q in range(4):
-            if 3.0 - seas[q] >= 2.0:
+            if season_need[q] - seas[q] >= 2.0:
                 ok = False
         ann[k] = s / cnt if ok else np.nan
 
@@ -219,6 +220,7 @@ def cell_trends(
     base: np.ndarray,
     year_start: np.ndarray,  # row offsets of each calendar year, + final length
     season_of_month: np.ndarray,  # (12,) 0..3
+    season_need: np.ndarray,  # (4,) months each season should have; 0 = not required
     n_eff_min: float,
     annual_min_months: int,
     z_crit: float,
@@ -237,6 +239,7 @@ def cell_trends(
             base,
             year_start,
             season_of_month,
+            season_need,
             n_eff_min,
             annual_min_months,
             z_crit,

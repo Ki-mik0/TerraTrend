@@ -95,17 +95,25 @@ class GridProduct:
     vmax: float
     years: tuple[int, ...] = ()
     file: str = ""
+    # Colour scale of the yearly anomaly frames (variable units); `vmax` is per decade.
+    frame_vmax: float | None = None
 
     def __post_init__(self) -> None:
         parse_period(self.period)
         west, south, east, north = self.bbox
         if not (west < east and south < north) or not self.resolution > 0 or not 0 < self.vmax < float("inf"):
             raise TileError("grid_invalid", "Некоректні межі, роздільність або vmax сітки")
+        if self.frame_vmax is not None and not 0 < self.frame_vmax < float("inf"):
+            raise TileError("grid_invalid", "Некоректний frame_vmax сітки")
 
     def overlaps(self, bounds: tuple[float, float, float, float]) -> bool:
         west, south, east, north = bounds
         g_west, g_south, g_east, g_north = self.bbox
         return west < g_east and east > g_west and south < g_north and north > g_south
+
+    def scale(self, year: int | None) -> float:
+        """Colour scale: per-decade trend, or the anomaly of one year's frame."""
+        return self.frame_vmax if year is not None and self.frame_vmax else self.vmax
 
     def has_frame(self, year: int | None) -> bool:
         return year is None or year in self.years

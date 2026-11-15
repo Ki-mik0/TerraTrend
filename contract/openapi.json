@@ -5877,6 +5877,16 @@
           "vmax": {
             "type": "number"
           },
+          "frame_vmax": {
+            "oneOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "years": {
             "items": {
               "type": "integer"

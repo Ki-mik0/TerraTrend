@@ -76,10 +76,11 @@ class PillowTileRenderer:
             rgba[:] = _AI_TABLE[classes]
         else:
             values = np.asarray(arrays.values, dtype=float)[rows, cols]
-            scaled = np.clip(np.nan_to_num((values / product.vmax + 1) / 2, nan=0.5), 0, 1)
+            vmax = product.scale(request.year)
+            scaled = np.clip(np.nan_to_num((values / vmax + 1) / 2, nan=0.5), 0, 1)
             rgba[..., :3] = _LUTS[request.palette][(scaled * 255).astype(int)]
             # Opacity grows with the size of the trend, so a near-zero cell lets the basemap show through.
-            strength = np.clip(np.nan_to_num(np.abs(values) / product.vmax, nan=0.0), 0, 1)
+            strength = np.clip(np.nan_to_num(np.abs(values) / vmax, nan=0.0), 0, 1)
             base = np.where(significant, SIGNIFICANT_ALPHA, FAINT_ALPHA)
             rgba[..., 3] = np.rint(base * (0.2 + 0.8 * strength)).astype(np.uint8)
             rgba[..., 3] = np.where(np.isnan(values), 0, rgba[..., 3])

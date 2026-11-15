@@ -98,3 +98,26 @@ def test_one_degree_global_grid_under_five_seconds() -> None:
     t0 = time.perf_counter()
     analyze_grid(cube, lat, lon, dates)
     assert time.perf_counter() - t0 < 5.0
+
+
+def test_seasonal_grid_trend_reads_only_that_season() -> None:
+    """A trend living only in summer: JJA sees it in full, DJF does not, the annual mean sees a quarter."""
+    from datetime import date
+
+    rng = np.random.default_rng(7)
+    dates = [date(y, m, 1) for y in range(1991, 2021) for m in range(1, 13)]
+    years = np.array([d.year for d in dates], dtype=float)
+    months = np.array([d.month for d in dates])
+    summer = np.isin(months, (6, 7, 8))
+    signal = np.where(summer, 0.1 * (years - 1991), 0.0)  # +1.0 per decade, summer only
+    cube = signal[:, None, None] + rng.normal(0, 0.05, (len(dates), 2, 2))
+
+    jja = grid_trends(cube, dates, season="JJA")
+    djf = grid_trends(cube, dates, season="DJF")
+    annual = grid_trends(cube, dates)
+    assert np.allclose(jja.slope, 1.0, atol=0.05)
+    assert np.all(np.abs(djf.slope) < 0.05)
+    assert np.allclose(annual.slope, 0.25, atol=0.05)
+    assert np.all(jja.p_mk < 0.01) and np.all(djf.p_mk > 0.05)
+    product = analyze_grid(cube, np.array([0.5, -0.5]), np.array([0.5, 1.5]), dates, season="JJA")
+    assert product.sig_fdr.all()

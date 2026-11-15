@@ -50,6 +50,7 @@ def analyze_grid(
     alpha: float = config.ALPHA,
     fdr_alpha: float = config.FDR_ALPHA,
     ai: bool = False,
+    season: str | None = None,
 ) -> GridTrendProduct:
     """Trends per cell, FDR, region split and zones.
 
@@ -66,7 +67,7 @@ def analyze_grid(
     if domain_mask is not None:
         cells &= np.asarray(domain_mask, dtype=bool)
 
-    f = grid_trends(cube, dates, cells, baseline, alpha)
+    f = grid_trends(cube, dates, cells, baseline, alpha, season=season)
     p = np.fmax(f.p_ols, f.p_mk)
     p = np.where(f.valid, np.where(np.isnan(f.p_ols) | np.isnan(f.p_mk), np.nan, p), np.nan)
     sig, q, threshold = benjamini_hochberg(p, fdr_alpha)
@@ -87,7 +88,7 @@ def analyze_grid(
         zones=zones,
     )
     ai_class = ai_step = None
-    if ai:
+    if ai and (season is None or season == "annual"):  # M1 reads full monthly series
         ai_class, ai_step = _ai_layer(cube, dates, f.valid)
     return GridTrendProduct(
         lat=lat,

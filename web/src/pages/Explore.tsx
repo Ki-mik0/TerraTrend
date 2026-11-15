@@ -175,6 +175,9 @@ export function Explore() {
     [products.data, season],
   );
   const years = useMemo(() => product?.years ?? [], [product]);
+  // A year frame shows that year's anomaly, so the legend switches to the frame scale.
+  const frame = year !== null && Boolean(product?.frame_vmax);
+  const scale = (frame ? product?.frame_vmax : product?.vmax) ?? 1;
 
   useEffect(() => {
     setYear(null);
@@ -529,12 +532,17 @@ export function Explore() {
             <div className="flex flex-col gap-1">
               <div className="h-2.5 w-full rounded-full" style={{ background: PALETTE_GRADIENTS[palette] ?? PALETTE_GRADIENTS.rdbu }} />
               <div className="flex justify-between text-[11px] tabular-nums text-muted">
-                <span>−{product.vmax.toPrecision(2)}</span>
+                <span>−{scale.toPrecision(2)}</span>
                 <span>0</span>
-                <span>+{product.vmax.toPrecision(2)} {names.units(selectedVariable)} {tr("за 10 років", "per decade")}</span>
+                <span>
+                  +{scale.toPrecision(2)} {names.units(selectedVariable)}{" "}
+                  {frame ? tr(`аномалія ${year}`, `anomaly in ${year}`) : tr("за 10 років", "per decade")}
+                </span>
               </div>
               <p className="text-xs text-muted">
-                {tr("Червоне — величина зростає, синє — спадає, прозоре — майже без змін.", "Red — the quantity is rising, blue — falling, clear — barely changing.")}
+                {frame
+                  ? tr("Кадр року: червоне — вище норми 1991–2020, синє — нижче норми.", "Year frame: red — above the 1991–2020 normal, blue — below it.")
+                  : tr("Червоне — величина зростає, синє — спадає, прозоре — майже без змін.", "Red — the quantity is rising, blue — falling, clear — barely changing.")}
               </p>
             </div>
           )}

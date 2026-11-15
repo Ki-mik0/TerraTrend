@@ -1410,6 +1410,7 @@ export interface components {
             bbox: number[];
             resolution: number;
             vmax: number;
+            frame_vmax?: number | null;
             years: number[];
             products: string[];
             palettes: string[];

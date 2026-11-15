@@ -66,8 +66,14 @@ def grid_trends(
     cell_mask: B | None = None,
     baseline: tuple[int, int] | None = None,
     alpha: float = config.ALPHA,
+    season: str | None = None,
 ) -> GridTrendFields:
-    """``cube``: monthly values (time, lat, lon). ``cell_mask``: cells to compute."""
+    """``cube``: monthly values (time, lat, lon). ``cell_mask``: cells to compute.
+
+    ``season`` (a key of ``config.SEASON_MONTHS``) keeps only that season's months: the
+    Mann-Kendall / Sen series is then one seasonal mean per year (at least 2 of its 3 months),
+    December counting towards the next year's DJF.
+    """
     cube = np.asarray(cube, dtype=np.float64)
     nt, nlat, nlon = cube.shape
     if nt != len(dates):
@@ -76,6 +82,17 @@ def grid_trends(
     if np.any(np.diff(years) < 0):
         raise ValueError("dates must be increasing")
     t = decimal_year(years, months)
+    season_need = np.full(4, 3.0)
+    min_months = config.ANNUAL_MIN_MONTHS
+    if season is not None and season != "annual":
+        if season not in config.SEASON_MONTHS:
+            raise ValueError(f"unknown season {season!r}")
+        keep = np.isin(months, config.SEASON_MONTHS[season])
+        cube, t, months = cube[keep], t[keep], months[keep]
+        years = years[keep] + ((months == 12) & (season == "DJF"))
+        nt = cube.shape[0]
+        season_need = np.where(np.arange(4) == list(config.SEASON_MONTHS).index(season), 3.0, 0.0)
+        min_months = 2
     base = (years >= baseline[0]) & (years <= baseline[1]) if baseline else np.ones(nt, dtype=bool)
     year_start = np.r_[0, np.flatnonzero(np.diff(years)) + 1, nt].astype(np.int64)
     month0 = (months - 1).astype(np.int64)
@@ -98,8 +115,9 @@ def grid_trends(
             base,
             year_start,
             som,
+            season_need,
             config.N_EFF_MIN,
-            config.ANNUAL_MIN_MONTHS,
+            min_months,
             z_crit,
             TIE_RESOLUTION,
         )

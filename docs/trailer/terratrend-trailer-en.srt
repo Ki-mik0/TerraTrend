@@ -1,0 +1,45 @@
+1
+00:00:00,001 --> 00:00:02,002
+Hi, we are Team Natus Compilare
+Andrusyk V. B. · Lisoviy M. V. · Tokar I. A.
+
+2
+00:00:02,002 --> 00:00:05,504
+Is the climate really changing here — or is it just noise?
+Inspired by NASA open data: the evidence is public, but hard to read.
+
+3
+00:00:05,504 --> 00:00:10,167
+Investigate how Earth is changing — like a detective.
+Pick a place, a variable and a period — get a verdict backed by evidence.
+
+4
+00:00:10,167 --> 00:00:13,873
+Choose what, where and when — the trend is tested six independent ways.
+
+5
+00:00:13,873 --> 00:00:16,930
+Every case runs on NASA POWER open data — real satellite & reanalysis series.
+Verdict: strong evidence · Arctic air warms ≈ +0.48 °C per decade (2000–2024)
+
+6
+00:00:16,930 --> 00:00:20,169
+The radar scans 390 NASA POWER series across 16 regions for the strongest signals.
+
+7
+00:00:20,169 --> 00:00:23,173
+Schools: teach evidence-based thinking with real NASA data.
+
+8
+00:00:23,173 --> 00:00:26,192
+Citizens & journalists: fact-check climate claims in seconds.
+Compare regions side by side · export PDF / PNG / CSV reports
+
+9
+00:00:26,192 --> 00:00:28,002
+One engine for any planetary dataset — from Earth today to future missions.
+
+10
+00:00:28,002 --> 00:00:30,000
+TerraTrend Detective — tell real trends from noise with NASA open data.
+Team Natus Compilare: Andrusyk V. B. · Lisoviy M. V. · Tokar I. A.

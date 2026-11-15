@@ -6,8 +6,9 @@ Layout under the grid root (default `STORAGE_ROOT/grids`):
                                  "bbox": [west, south, east, north], "resolution", "vmax", "years": [...]}]}
     <file>.npz   slope, sig_fdr, ai_class, ai_step_prob, and optional anomaly_<year> frames
 
-Rows run north to south, columns west to east. Without `index.json` a deterministic synthetic
-seed is served, so the map works before the first analytics run.
+Rows run north to south, columns west to east. `frame_vmax` (optional) scales the anomaly frames.
+Until `index.json` lists a usable product a deterministic synthetic seed is served, so the map
+works before the first run of `scripts/grid_scan.py`.
 """
 
 from __future__ import annotations
@@ -92,9 +93,9 @@ class FileGridStore:
         if not index.exists():
             return self._seed
         listed = await self._listed(index)
-        # Analytics grids win; the seed keeps every variable, period and season they do not cover yet.
-        covered = {(item.variable_id, item.period, item.season) for item in listed}
-        return listed + [item for item in self._seed if (item.variable_id, item.period, item.season) not in covered]
+        # Real grids replace the synthetic seed entirely: a variable without a computed grid shows
+        # no map rather than invented trends next to real ones.
+        return listed or self._seed
 
     async def _listed(self, index: Path) -> list[GridProduct]:
         mtime = index.stat().st_mtime
@@ -115,6 +116,7 @@ class FileGridStore:
                         vmax=float(row["vmax"]),
                         years=tuple(int(year) for year in row.get("years", ())),
                         file=str(row["file"]),
+                        frame_vmax=float(row["frame_vmax"]) if row.get("frame_vmax") else None,
                     )
                 )
             except (KeyError, TypeError, ValueError, TileError) as error:

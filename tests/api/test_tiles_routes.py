@@ -62,7 +62,7 @@ def test_computed_grid_has_finite_vmax_new_version_and_renders() -> None:
         assert grid["vmax"] > 0 and grid["data_version"].count("-") >= 1
         assert grid["bbox"][0] < 30 < 32 < grid["bbox"][2]
         listed = client.get("/api/v1/tiles/products", params={"variable_id": "merra2_t2m"}).json()
-        assert {item["period"] for item in listed} == {"2000-2024", "2007-2018"}  # the seed stays beside it
+        assert {item["period"] for item in listed} == {"2007-2018"}  # a real grid replaces the seed
         tile = client.get("/api/v1/tiles/trend/3/4/2.png", params={"variable_id": "merra2_t2m", "period": "2007-2018"})
         assert tile.status_code == 200
         again = client.post("/api/v1/tiles/products", json={**body, "values": [[[0.2 - 0.003 * month, 0.3 + 0.002 * month], [0.25, 0.28]] for month in range(len(dates))]})

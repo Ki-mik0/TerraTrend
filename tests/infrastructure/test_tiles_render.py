@@ -81,17 +81,17 @@ async def test_file_grid_store_reads_index_and_npz(tmp_path: Path) -> None:
     index = {
         "products": [
             {"variable_id": "gldas_sm", "period": "2000-2024", "season": "annual", "version": "v2", "file": "sm_v2",
-             "bbox": [20, 40, 40, 55], "resolution": 1, "vmax": 0.04, "years": [2010]},
+             "bbox": [20, 40, 40, 55], "resolution": 1, "vmax": 0.04, "frame_vmax": 0.2, "years": [2010]},
             {"variable_id": "broken", "period": "x"},
         ]
     }
     (tmp_path / "index.json").write_text(json.dumps(index), encoding="utf-8")
     store = FileGridStore(tmp_path)
-    assert await store.version() == f"{SEED_VERSION},v2"
+    assert await store.version() == "v2"  # real grids replace the synthetic seed entirely
     product = await store.find("gldas_sm", "2000-2024", "annual")
-    assert product is not None and product.version == "v2"  # the analytics grid replaces the seed one
-    seeded = await store.products()
-    assert len(seeded) == 6 and {item.version for item in seeded if item.variable_id != "gldas_sm" or item.season != "annual"} == {SEED_VERSION}
+    assert product is not None and product.version == "v2"
+    assert [item.version for item in await store.products()] == ["v2"]
+    assert product.scale(None) == 0.04 and product.scale(2010) == 0.2  # frames have their own colour scale
     frame = await store.arrays(product, 2010)
     assert float(frame.values[0, 0]) == pytest.approx(-0.08)
     computed = await store.arrays(product, 2005)  # no stored frame: derived from the slope
