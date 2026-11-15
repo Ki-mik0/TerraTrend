@@ -14,6 +14,10 @@ from earthtrend.api.application.tiles.ports import GridPort, ObjectStorage, Tile
 from earthtrend.api.domain.tiles.model import GridProduct, TileError, TileRequest
 
 
+# Bump when the renderer draws differently, so PNGs stored by the old renderer are not served.
+RENDER_VERSION = "r2"
+
+
 class TileMetrics(Protocol):
     def observe(self, product: str, outcome: str, seconds: float | None) -> None: ...
 
@@ -63,7 +67,7 @@ class TileService:
 
     async def tile(self, request: TileRequest) -> TileResult:
         product = await self.product_for(request)
-        key = request.storage_key(product.version)
+        key = request.storage_key(f"{product.version}.{RENDER_VERSION}")
         etag = '"' + hashlib.sha256(key.encode()).hexdigest()[:20] + '"'
         if not product.overlaps(request.bounds()):
             self._metrics.observe(request.product, "empty", None)
@@ -82,7 +86,7 @@ class TileService:
     async def etag_for(self, request: TileRequest) -> str:
         """The ETag without reading or rendering the tile, for a cheap 304."""
         product = await self.product_for(request)
-        return '"' + hashlib.sha256(request.storage_key(product.version).encode()).hexdigest()[:20] + '"'
+        return '"' + hashlib.sha256(request.storage_key(f"{product.version}.{RENDER_VERSION}").encode()).hexdigest()[:20] + '"'
 
     async def grid_version(self) -> str:
         return await self._grids.version()

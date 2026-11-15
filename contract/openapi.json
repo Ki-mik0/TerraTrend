@@ -2129,6 +2129,75 @@
         "deprecated": false
       }
     },
+    "/api/v1/education/demos/{demo_id}/progress": {
+      "get": {
+        "summary": "DemoProgress",
+        "operationId": "ApiV1EducationDemosDemoIdProgressDemoProgress",
+        "parameters": [
+          {
+            "name": "demo_id",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "deprecated": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request fulfilled, document follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoProgressResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request syntax or unsupported method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status_code": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "status_code": 400,
+                      "detail": "Bad Request",
+                      "extra": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
     "/api/v1/education/demos/{demo_id}/steps/{step}": {
       "post": {
         "summary": "CompleteStep",
@@ -2842,6 +2911,74 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Document created, URL follows",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request syntax or unsupported method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status_code": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    }
+                  },
+                  "type": "object",
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "status_code": 400,
+                      "detail": "Bad Request",
+                      "extra": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/v1/session/refresh": {
+      "post": {
+        "summary": "RefreshSession",
+        "operationId": "ApiV1SessionRefreshRefreshSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
               }
             }
           },
@@ -4639,6 +4776,16 @@
                 "type": "null"
               }
             ]
+          },
+          "indicator": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -4932,6 +5079,30 @@
               }
             ]
           },
+          "datasets_version": {
+            "type": "string",
+            "default": ""
+          },
+          "slope_decade": {
+            "oneOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "direction": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "links": {
             "additionalProperties": {
               "type": "string"
@@ -5165,6 +5336,16 @@
             "oneOf": [
               {
                 "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "indicator": {
+            "oneOf": [
+              {
+                "type": "string"
               },
               {
                 "type": "null"
@@ -5540,6 +5721,17 @@
               "svg",
               "citation"
             ]
+          },
+          "language": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "enum": [
+              "uk",
+              "en",
+              null
+            ]
           }
         },
         "type": "object",
@@ -5563,6 +5755,16 @@
             "type": "string"
           },
           "download_url": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "filename": {
             "oneOf": [
               {
                 "type": "string"
@@ -6864,6 +7066,20 @@
         ],
         "title": "RadarScanRequest"
       },
+      "RefreshRequest": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "maxLength": 4096,
+            "minLength": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "title": "RefreshRequest"
+      },
       "RegionResponse": {
         "properties": {
           "id": {
@@ -6909,6 +7125,10 @@
                 "type": "null"
               }
             ]
+          },
+          "name_uk": {
+            "type": "string",
+            "default": ""
           }
         },
         "type": "object",
@@ -7237,10 +7457,15 @@
         "properties": {
           "token": {
             "type": "string"
+          },
+          "expires_at": {
+            "type": "integer",
+            "description": "Unix seconds when the token stops working; refresh before then."
           }
         },
         "type": "object",
         "required": [
+          "expires_at",
           "token"
         ],
         "title": "SessionResponse"

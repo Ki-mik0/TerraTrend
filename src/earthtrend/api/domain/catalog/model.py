@@ -66,6 +66,7 @@ class Region:
     status: str
     geometry: dict | None = None
     ring: tuple[float, float, float, float] | None = None
+    name_uk: str = ""
 
 
 @dataclass(frozen=True)

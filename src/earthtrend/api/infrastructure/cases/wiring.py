@@ -30,7 +30,7 @@ def build_case_service(
     achievements=None,
     catalog=None,
     cache=None,
-    analysis: MemoryAnalysis | None = None,
+    analysis=None,
 ) -> CaseService:
     return CaseService(
         store=store or MemoryCaseStore(),
@@ -56,4 +56,6 @@ def case_store_from_env() -> tuple[CaseStore, object | None]:
                 await connection.run_sync(Base.metadata.create_all)
 
         return store, prepare
-    return MemoryCaseStore(), None
+    from earthtrend.api.infrastructure.shared.snapshot import persist
+
+    return persist(MemoryCaseStore(), "cases", ("cases", "_seq")), None

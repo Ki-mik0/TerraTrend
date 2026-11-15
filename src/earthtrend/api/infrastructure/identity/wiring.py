@@ -58,4 +58,12 @@ def identity_from_env() -> tuple[IdentityService, object | None]:
     url = os.environ.get("DB_URL", "")
     if url.startswith("postgresql"):
         return build_postgres_identity(url, os.environ.get("REDIS_URL") or None)
-    return build_identity_service(), None
+    from earthtrend.api.infrastructure.shared.snapshot import persist
+
+    passwords = ArgonPassword()
+    store = persist(
+        MemoryIdentityStore(passwords=passwords, clock=SystemClock()),
+        "identity",
+        ("users", "audit", "reviews", "secret_hashes", "_counters"),
+    )
+    return IdentityService(passwords=passwords, tokens=JwtTokens(), cases=MemoryCaseLookup(), store=store, cache=NullUserCache()), None

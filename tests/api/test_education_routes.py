@@ -146,6 +146,11 @@ def test_demos_glossary_and_steps_by_language() -> None:
         assert again["badge"] is None
         assert client.post(f"/api/v1/education/demos/{demo_id}/steps/99", headers=student).status_code == 422
         assert client.post("/api/v1/education/demos/nope/steps/1", headers=student).status_code == 404
+        progress = client.get(f"/api/v1/education/demos/{demo_id}/progress", headers=student).json()
+        assert progress["finished"] is True and progress["steps_done"] == list(range(1, total + 1))
+        fresh = client.get("/api/v1/education/demos/demo_arctic/progress", headers=student).json()
+        assert fresh["steps_done"] == [] and fresh["finished"] is False
+        assert client.get("/api/v1/education/demos/nope/progress", headers=student).status_code == 404
 
 
 def test_quiz_hides_answers_and_awards_once() -> None:

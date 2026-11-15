@@ -68,7 +68,7 @@ def create_app(
         state=state,
         exception_handlers=EXCEPTION_HANDLERS,
         middleware=[request_logging_middleware],
-        cors_config=CORSConfig(allow_origins=settings.cors_origins, allow_credentials=True),
+        cors_config=CORSConfig(allow_origins=settings.cors_origins, allow_credentials=True, expose_headers=["Content-Disposition"]),
         request_max_body_size=MAX_BODY_BYTES,
         on_shutdown=[dispose_engine],
         openapi_config=OpenAPIConfig(

@@ -6,7 +6,9 @@ from earthtrend.api.domain.education.model import LabParams, LabRun
 from earthtrend.api.infrastructure.analytics_bridge import lab_series, run_blocking
 
 
-class StubLab:
+class AnalyticsLab:
+    """Runs the lab with the real analytics; not a stub despite the old name."""
+
     async def run(self, params: LabParams) -> LabRun:
         computed = await run_blocking(
             lab_series,
@@ -25,3 +27,6 @@ class StubLab:
             significant=computed["significant"],
             series=tuple(value for value in computed["series"] if value is not None),
         )
+
+
+StubLab = AnalyticsLab  # old name, kept for imports

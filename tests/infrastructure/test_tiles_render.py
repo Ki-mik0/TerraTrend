@@ -87,9 +87,11 @@ async def test_file_grid_store_reads_index_and_npz(tmp_path: Path) -> None:
     }
     (tmp_path / "index.json").write_text(json.dumps(index), encoding="utf-8")
     store = FileGridStore(tmp_path)
-    assert await store.version() == "v2"
+    assert await store.version() == f"{SEED_VERSION},v2"
     product = await store.find("gldas_sm", "2000-2024", "annual")
-    assert product is not None and len(await store.products()) == 1
+    assert product is not None and product.version == "v2"  # the analytics grid replaces the seed one
+    seeded = await store.products()
+    assert len(seeded) == 6 and {item.version for item in seeded if item.variable_id != "gldas_sm" or item.season != "annual"} == {SEED_VERSION}
     frame = await store.arrays(product, 2010)
     assert float(frame.values[0, 0]) == pytest.approx(-0.08)
     computed = await store.arrays(product, 2005)  # no stored frame: derived from the slope
@@ -98,3 +100,22 @@ async def test_file_grid_store_reads_index_and_npz(tmp_path: Path) -> None:
     escaped = GridProduct(**{**product.__dict__, "file": "../outside", "version": "v3"})
     with pytest.raises(TileError):
         await store.arrays(escaped, None)
+
+
+def test_nan_values_and_bad_vmax_never_break_a_tile() -> None:
+    with pytest.raises(TileError):
+        GridProduct(variable_id="v", period="2000-2024", season="annual", version="1", bbox=(0, 0, 1, 1), resolution=1, vmax=float("nan"))
+    holes = SLOPE.copy()
+    holes[:, :] = np.nan
+    request = TileRequest(product="trend", z=3, x=4, y=2, variable_id="gldas_sm", period="2000-2024")
+    pixels = _image(PillowTileRenderer().render(request, GRID, GridArrays(holes, SIG, CLASSES)))
+    assert pixels[..., 3].max() == 0
+
+
+async def test_index_row_with_nan_vmax_is_skipped(tmp_path: Path) -> None:
+    np.savez(tmp_path / "bad.npz", slope=SLOPE, sig_fdr=SIG, ai_class=CLASSES, ai_step_prob=SIG)
+    row = {"variable_id": "gldas_sm", "period": "2000-2024", "season": "annual", "version": "bad", "file": "bad",
+           "bbox": [20, 40, 40, 55], "resolution": 1, "vmax": float("nan"), "years": []}
+    (tmp_path / "index.json").write_text(json.dumps({"products": [row]}), encoding="utf-8")
+    product = await FileGridStore(tmp_path).find("gldas_sm", "2000-2024", "annual")
+    assert product is not None and product.version == SEED_VERSION

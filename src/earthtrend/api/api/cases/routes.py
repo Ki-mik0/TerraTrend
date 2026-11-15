@@ -64,6 +64,9 @@ def _response(case: Case) -> CaseResponse:
         job_id=case.job_id,
         verdict=verdict,
         evidence_version=None if case.evidence is None else case.evidence.version,
+        datasets_version=case.datasets_version,
+        slope_decade=None if case.series is None else case.series.slope_decade,
+        direction=None if case.verdict is None else case.verdict.direction,
         links=links,
     )
 

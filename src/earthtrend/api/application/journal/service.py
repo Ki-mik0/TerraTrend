@@ -25,11 +25,12 @@ class JournalService:
 
     async def list_journal(self, *, actor_id: str) -> tuple[list[Note], list[SavedCase]]:
         notes = await self._store.list_notes(actor_id)
-        saved = await self._store.list_saved(actor_id)
-        return notes, saved
+        return notes, await self.list_cases(actor_id=actor_id)
 
     async def list_cases(self, *, actor_id: str) -> list[SavedCase]:
-        return await self._store.list_saved(actor_id)
+        """Saved cases that still exist: a deleted case must not stay behind as a dead link."""
+        saved = await self._store.list_saved(actor_id)
+        return [item for item in saved if await self._cases.get(item.case_id) is not None]
 
     async def add_note(
         self, *, author_id: str, role: str, case_id: str, text: str, kind: str = "note"

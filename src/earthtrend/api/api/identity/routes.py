@@ -10,6 +10,7 @@ from earthtrend.api.api.identity.schemas import (
     IssueKeyRequest,
     KeyResponse,
     LoginRequest,
+    RefreshRequest,
     RegisterRequest,
     ReviewRequest,
     ReviewResponse,
@@ -40,17 +41,20 @@ def _http(error: IdentityError) -> HTTPException:
 
 
 def identity_router(service: IdentityService) -> Router:
+    def session(token: str) -> SessionResponse:
+        return SessionResponse(token=token, expires_at=service.expires_at(token))
+
     @post("/session")
     async def login(data: JSONBody[LoginRequest]) -> SessionResponse:
         try:
             token = await service.login(username=data.username, password=data.password)
         except IdentityError as error:
             raise _http(error) from error
-        return SessionResponse(token=token)
+        return session(token)
 
     @post("/session/guest")
     async def guest_session() -> SessionResponse:
-        return SessionResponse(token=await service.issue_guest())
+        return session(await service.issue_guest())
 
     @post("/session/register")
     async def register(data: JSONBody[RegisterRequest]) -> SessionResponse:
@@ -58,7 +62,16 @@ def identity_router(service: IdentityService) -> Router:
             token = await service.register(username=data.username, password=data.password)
         except IdentityError as error:
             raise _http(error) from error
-        return SessionResponse(token=token)
+        return session(token)
+
+    @post("/session/refresh")
+    async def refresh_session(data: JSONBody[RefreshRequest]) -> SessionResponse:
+        """Swap a live or recently expired token for a new one, so a session survives without signing in again."""
+        try:
+            token = await service.refresh(data.token)
+        except IdentityError as error:
+            raise _http(error) from error
+        return session(token)
 
     @get("/session")
     async def read_session(request: Request) -> SessionReadResponse:
@@ -98,5 +111,5 @@ def identity_router(service: IdentityService) -> Router:
 
     return Router(
         path="/api/v1",
-        route_handlers=[login, guest_session, register, read_session, issue_key, revoke_key, review],
+        route_handlers=[login, guest_session, register, refresh_session, read_session, issue_key, revoke_key, review],
     )

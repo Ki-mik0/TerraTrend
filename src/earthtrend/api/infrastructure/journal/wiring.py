@@ -31,4 +31,6 @@ def journal_from_env(cases: CaseLookup) -> tuple[JournalService, object | None]:
     url = os.environ.get("DB_URL", "")
     if url.startswith("postgresql"):
         return build_postgres_journal(url, cases)
-    return build_journal_service(cases), None
+    from earthtrend.api.infrastructure.shared.snapshot import persist
+
+    return JournalService(cases=cases, store=persist(MemoryJournalStore(), "journal", ("notes", "saved", "_seq"))), None

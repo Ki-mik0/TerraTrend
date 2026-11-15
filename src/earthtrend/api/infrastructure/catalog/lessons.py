@@ -10,7 +10,7 @@ _DEMOS: list[tuple[str, str, str, str, tuple[str, str], dict[str, tuple[str, str
         "demo_one_process",
         "vertical_profile",
         "merra2_t_profile",
-        "global",
+        "ukraine",
         ("1980-01", "2024-12"),
         {
             "uk": (
@@ -39,7 +39,7 @@ _DEMOS: list[tuple[str, str, str, str, tuple[str, str], dict[str, tuple[str, str
         "demo_clean_air",
         "split",
         "omi_no2",
-        "usa_europe_south_asia",
+        "eastern_us",
         ("2005-01", "2024-12"),
         {
             "uk": (
@@ -94,8 +94,8 @@ _DEMOS: list[tuple[str, str, str, str, tuple[str, str], dict[str, tuple[str, str
     (
         "demo_el_nino",
         "alibi",
-        "gpm_precip",
-        "tropical_pacific",
+        "gpm_imerg",
+        "amazon",
         ("1998-01", "2024-12"),
         {
             "uk": (
@@ -121,7 +121,7 @@ _DEMOS: list[tuple[str, str, str, str, tuple[str, str], dict[str, tuple[str, str
     (
         "demo_urban_heat",
         "urban_contrast",
-        "modis_lst_night",
+        "modis_lst",
         "kyiv",
         ("2003-01", "2024-12"),
         {
@@ -149,7 +149,7 @@ _DEMOS: list[tuple[str, str, str, str, tuple[str, str], dict[str, tuple[str, str
         "demo_groundwater",
         "years_to_proof",
         "grace_tws",
-        "north_india",
+        "indo_gangetic",
         ("2002-04", "2024-12"),
         {
             "uk": (

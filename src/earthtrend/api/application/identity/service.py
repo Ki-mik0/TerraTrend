@@ -24,6 +24,10 @@ class TokenPort(Protocol):
 
     def read(self, token: str) -> tuple[str, str]: ...
 
+    def refreshable(self, token: str) -> tuple[str, str]: ...
+
+    def expires_at(self, token: str) -> int: ...
+
 
 class CaseLookup(Protocol):
     async def get(self, case_id: str) -> Case | None: ...
@@ -90,6 +94,20 @@ class IdentityService:
         if user is None or user.role != role:
             raise IdentityError("invalid_token", "Сесія недійсна")
         return user.id, user.role
+
+    async def refresh(self, token: str) -> str:
+        """A fresh token for a live or recently expired one, while the user still exists with the same role."""
+        try:
+            user_id, role = self._tokens.refreshable(token)
+        except Exception as error:
+            raise IdentityError("invalid_token", "Сесія недійсна") from error
+        user = await self._cached_user(user_id)
+        if user is None or user.role != role:
+            raise IdentityError("invalid_token", "Сесія недійсна")
+        return self._tokens.issue(user_id=user.id, role=user.role)
+
+    def expires_at(self, token: str) -> int:
+        return self._tokens.expires_at(token)
 
     async def issue_key(self, *, actor_id: str, role: str, owner_id: str) -> ApiKey:
         self._require_admin(role)

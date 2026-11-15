@@ -30,6 +30,7 @@ class ExportRecord:
     format: str
     status: str = "queued"
     body: bytes | None = None
+    filename: str = ""
 
     def __post_init__(self) -> None:
         require_format(self.format)

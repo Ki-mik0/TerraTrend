@@ -182,6 +182,8 @@ class AnalysisProduct:
     datasets_version: str
     algorithm_version: str
     result_hash: str
+    # The TrendNet opinion when the analytics computed one; never part of the result hash.
+    ai_opinion: AiOpinion | None = None
 
 
 @dataclass

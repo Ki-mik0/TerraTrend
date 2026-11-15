@@ -69,6 +69,7 @@ def _region(item: Region) -> RegionResponse:
         status=item.status,
         geometry=item.geometry,
         ring=list(item.ring) if item.ring else None,
+        name_uk=item.name_uk or item.name,
     )
 
 

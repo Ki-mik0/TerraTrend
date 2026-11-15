@@ -191,6 +191,21 @@ def education_router(service: EducationService, identity: IdentityService) -> Ro
         except EducationError as error:
             raise _http(error) from error
 
+    @get("/education/demos/{demo_id:str}/progress")
+    async def demo_progress(demo_id: FromPath[str], request: Request) -> DemoProgressResponse:
+        actor = await require_actor(request, identity)
+        try:
+            demo, progress = await service.demo_progress(demo_id, user_id=actor.id)
+        except EducationError as error:
+            raise _http(error) from error
+        total = len(demo.steps)
+        return DemoProgressResponse(
+            demo_id=demo_id,
+            steps_done=sorted(progress.steps_done),
+            total_steps=total,
+            finished=progress.finished(total),
+        )
+
     @post("/education/demos/{demo_id:str}/steps/{step:int}")
     async def complete_step(demo_id: FromPath[str], step: FromPath[int], request: Request) -> DemoProgressResponse:
         actor = await require_actor(request, identity)
@@ -272,6 +287,7 @@ def education_router(service: EducationService, identity: IdentityService) -> Ro
             list_badges,
             list_demos,
             get_demo,
+            demo_progress,
             complete_step,
             list_glossary,
             list_quizzes,

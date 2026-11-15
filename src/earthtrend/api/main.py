@@ -43,11 +43,13 @@ from earthtrend.api.infrastructure.assistant.live import (
 )
 from earthtrend.api.infrastructure.assistant.wiring import Neighbors, assistant_from_env
 from earthtrend.api.infrastructure.cases.memory import MemoryAssignments
+from earthtrend.api.infrastructure.cases.sources import sourced_analysis_from_env
 from earthtrend.api.infrastructure.cases.wiring import build_case_service, case_store_from_env
 from earthtrend.api.infrastructure.catalog.wiring import catalog_from_env
 from earthtrend.api.infrastructure.education.wiring import education_from_env
 from earthtrend.api.infrastructure.health.wiring import health_from_env
 from earthtrend.api.infrastructure.identity.wiring import identity_from_env
+from earthtrend.api.infrastructure.shared.snapshot import persist
 from earthtrend.api.infrastructure.jobs.wiring import jobs_from_env
 from earthtrend.api.infrastructure.journal.wiring import journal_from_env
 from earthtrend.api.infrastructure.radar.wiring import radar_from_env
@@ -92,7 +94,7 @@ def create_app(
         catalog_service = catalog
     else:
         catalog_service, prepare_catalog = catalog_from_env(cache=shared_cache)
-    links = MemoryAssignments()
+    links = MemoryAssignments() if cases is not None else persist(MemoryAssignments(), "assignment_links", ("linked",))
     startup: list = []
     prepare_cases = None
     if cases is None:
@@ -130,12 +132,13 @@ def create_app(
             remember=journal_service,
             achievements=education_service,
             cache=shared_cache,
+            analysis=sourced_analysis_from_env(catalog_service, shared_cache),
         )
     else:
         case_service = cases
     if jobs is None:
         job_service.attach_finisher(case_service.finish_queued)
-    export_service = exports if exports is not None else ExportService(cases=case_lookup)
+    export_service = exports if exports is not None else ExportService(cases=case_lookup, catalog=catalog_service)
     if identity is not None:
         identity_service = identity
     else:

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from earthtrend.api.domain.catalog.model import ProcessLink, Region, SensorEvent, VariablePassport
 
 
@@ -68,6 +70,26 @@ def curated_passports() -> dict[str, VariablePassport]:
     return {item.id: item for item in items}
 
 
+REGION_NAMES_UK = {
+    "ukraine_south": "Південь України",
+    "ukraine_north": "Північ України",
+    "ar6_neu": "Північна Європа",
+    "ukraine": "Україна",
+    "kyiv_oblast": "Київська область",
+    "dnipro": "Басейн Дніпра",
+    "sahel": "Сахель",
+    "kyiv": "Київ",
+    "black_sea": "Чорне море",
+    "carpathians_high": "Карпати вище 2000 м",
+    "amazon": "Амазонія",
+    "indo_gangetic": "Індо-Гангська рівнина",
+    "eastern_us": "Схід США",
+    "arctic": "Арктика",
+    "antarctica": "Антарктида",
+    "california": "Каліфорнія",
+}
+
+
 def curated_links() -> list[ProcessLink]:
     return [
         ProcessLink("merra2_t2m", "gldas_sm", "driver"),
@@ -124,4 +146,4 @@ def curated_regions() -> dict[str, Region]:
         _region("antarctica", "Antarctica", "demo", (-180.0, -90.0, 180.0, -60.0), 14000000.0),
         _region("california", "California", "demo", (-124.5, 32.5, -114.0, 42.0), 420000.0),
     ]
-    return {item.id: item for item in items}
+    return {item.id: replace(item, name_uk=REGION_NAMES_UK.get(item.id, "")) for item in items}

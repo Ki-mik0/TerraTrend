@@ -17,7 +17,6 @@ from earthtrend.api.application.cases.ports import (
 from earthtrend.api.application.shared.cache import CachePort
 from earthtrend.api.domain.cases.codec import cache_key, dump_product, load_product
 from earthtrend.api.domain.cases.model import (
-    AiOpinion,
     AnalysisProduct,
     Case,
     CaseError,
@@ -90,12 +89,13 @@ class CaseService:
         if spec.heavy:
             case.queue(await self._jobs.enqueue(case.id))
         else:
-            opinion = AiOpinion(predicted_class="linear", confidence="medium")
             if series is not None:
                 product, opinion = await self._from_analytics(series, profile_levels, urban_cube, indicator)
                 case.source_series = series
             else:
                 product = await self._load_product(spec)
+                opinion = product.ai_opinion
+                case.source_series = await self._source_series(spec)
             case.complete(
                 verdict=product.verdict,
                 evidence=product.evidence,
@@ -118,11 +118,12 @@ class CaseService:
         if case is None or case.status == "completed":
             return
         product = await self._load_product(case.spec)
+        case.source_series = await self._source_series(case.spec)
         case.complete(
             verdict=product.verdict,
             evidence=product.evidence,
             series=product.series,
-            ai_opinion=AiOpinion(predicted_class="linear", confidence="medium"),
+            ai_opinion=product.ai_opinion,
             profile=product.profile,
             urban=product.urban,
             catalog_version=product.catalog_version,
@@ -217,6 +218,11 @@ class CaseService:
         if indicator:
             return await run_blocking(product_from_indicator, series, indicator, levels, urban)
         return await run_blocking(product_from_series, series, levels, urban)
+
+    async def _source_series(self, spec: CaseSpec) -> dict | None:
+        """The raw monthly series when the analysis built the case from one (NASA POWER or a demo series)."""
+        series_for = getattr(self._analysis, "series_for", None)
+        return None if series_for is None else await series_for(spec)
 
     async def _load_product(self, spec: CaseSpec) -> AnalysisProduct:
         key = cache_key(

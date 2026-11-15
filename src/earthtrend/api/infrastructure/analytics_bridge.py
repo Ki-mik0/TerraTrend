@@ -54,10 +54,11 @@ def _item(protocol, key: str) -> dict:
     return {} if found is None else dict(found.details)
 
 
-def domain_opinion(result) -> AiOpinion:
+def domain_opinion(result) -> AiOpinion | None:
+    """The TrendNet opinion, or None when no trained model is active (no invented opinion)."""
     opinion = result.ai_opinion
     if opinion is None:
-        return AiOpinion(predicted_class="linear", confidence="medium")
+        return None
     return AiOpinion(
         predicted_class=opinion.predicted_class,
         confidence=opinion.confidence,
@@ -65,7 +66,7 @@ def domain_opinion(result) -> AiOpinion:
     )
 
 
-def product_from_series(raw: dict, levels: dict | None = None, urban: dict | None = None) -> tuple[AnalysisProduct, AiOpinion]:
+def product_from_series(raw: dict, levels: dict | None = None, urban: dict | None = None) -> tuple[AnalysisProduct, AiOpinion | None]:
     series = RegionalSeries.model_validate(raw)
     options = AnalysisOptions()
     result = analyze_series(series, options)
@@ -86,7 +87,7 @@ def product_from_series(raw: dict, levels: dict | None = None, urban: dict | Non
 
 def product_from_indicator(
     raw: dict, code: str, levels: dict | None = None, urban: dict | None = None
-) -> tuple[AnalysisProduct, AiOpinion]:
+) -> tuple[AnalysisProduct, AiOpinion | None]:
     series = RegionalSeries.model_validate(raw)
     options = AnalysisOptions()
     values = np.array([np.nan if value is None else float(value) for value in series.values], dtype=np.float64)
@@ -163,8 +164,9 @@ def _packed(result, series, levels, urban, confirmed, total, triangle, alibi):
         datasets_version=series.meta.dataset_id,
         algorithm_version=ANALYTICS_VERSION,
         result_hash=digest,
+        ai_opinion=domain_opinion(result),
     )
-    return product, domain_opinion(result)
+    return product, product.ai_opinion
 
 
 def _profile(raw: dict) -> VerticalProfile:

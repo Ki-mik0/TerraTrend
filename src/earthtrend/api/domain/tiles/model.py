@@ -99,7 +99,7 @@ class GridProduct:
     def __post_init__(self) -> None:
         parse_period(self.period)
         west, south, east, north = self.bbox
-        if not (west < east and south < north) or self.resolution <= 0 or self.vmax <= 0:
+        if not (west < east and south < north) or not self.resolution > 0 or not 0 < self.vmax < float("inf"):
             raise TileError("grid_invalid", "Некоректні межі, роздільність або vmax сітки")
 
     def overlaps(self, bounds: tuple[float, float, float, float]) -> bool:

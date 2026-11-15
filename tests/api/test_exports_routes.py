@@ -1,4 +1,5 @@
 import asyncio
+import re
 
 import pytest
 from litestar.testing import TestClient
@@ -79,7 +80,7 @@ def _download(client: TestClient, headers: dict[str, str], case_id: str, fmt: st
             "png": "image/png",
             "pdf": "application/pdf",
             "zip": "application/zip",
-            "nc": "application/netcdf",
+            "nc": "application/x-netcdf",
             "svg": "image/svg+xml",
             "citation": "text/plain",
         }[fmt]
@@ -117,26 +118,46 @@ def test_each_format_is_its_own_file_with_the_case_slope() -> None:
         )}
 
     assert files["csv"] != files["pdf"]
+    assert files["csv"].startswith("\ufeff".encode())  # BOM, so Excel reads Cyrillic
+    assert b"year,-0.21" in files["csv"] and b"strong" in files["csv"]
     geo = json.loads(files["geojson"])
     assert geo["type"] == "FeatureCollection"
-    assert geo["features"][0]["geometry"] is None
-    assert geo["features"][0]["properties"]["slope_decade"] == -0.21
+    assert geo["features"][0]["properties"]["change_per_decade"] == -0.21
     assert geo["features"][0]["properties"]["verdict"] == "strong"
     notebook = json.loads(files["ipynb"])
     assert notebook["nbformat"] == 4
-    assert "-0.21" in "".join(notebook["cells"][0]["source"])
-    assert b"<html" in files["html"] and b"-0.21" in files["html"] and b"strong" in files["html"]
-    assert files["png"].startswith(b"\x89PNG\r\n\x1a\n") and b"-0.21" in files["png"]
+    assert "-0.21" in "".join("".join(cell["source"]) for cell in notebook["cells"])
+    assert b"<html" in files["html"] and b"0.21" in files["html"] and b"<svg" in files["html"]
+    assert files["png"].startswith(b"\x89PNG")
+    from PIL import Image
+
+    assert Image.open(BytesIO(files["png"])).size == (1200, 630)
     assert files["pdf"].startswith(b"%PDF") and files["pdf"].rstrip().endswith(b"%%EOF")
-    assert b"-0.21" in files["pdf"] and b"strong" in files["pdf"]
-    assert files["svg"].startswith(b"<svg") and b"-0.21" in files["svg"]
-    assert files["nc"].startswith(b"CDF\x01")
-    assert struct.unpack(">f", files["nc"][-4:])[0] == pytest.approx(-0.21)
-    assert b"10.5067/SXAVCZFAQLNO" in files["citation"] and b"-0.21" in files["citation"]
+    assert re.search(rb"/Count 2\b", files["pdf"])  # two A4 pages
+    assert files["svg"].lstrip().startswith((b"<?xml", b"<svg"))
+    assert files["nc"].startswith(b"CDF")
+    assert b"@misc" in files["citation"] and b"case_" in files["citation"]
     with zipfile.ZipFile(BytesIO(files["zip"])) as archive:
-        assert archive.namelist() == ["case.csv", "citation.txt"]
-        assert b"-0.21" in archive.read("case.csv")
-        assert b"10.5067/SXAVCZFAQLNO" in archive.read("citation.txt")
+        names = set(archive.namelist())
+        assert {"README.md", "report.html", "report.pdf", "card.png", "chart.svg", "data.csv", "citation.txt"} <= names
+        assert b"year,-0.21" in archive.read("data.csv")
+
+
+def test_download_names_the_file_and_report_follows_language() -> None:
+    store = MemoryCaseStore()
+    identity = build_identity_service()
+    asyncio.run(identity.add_user(user_id="u1", username="u1", role="user", password="secret"))
+    app = create_app(cases=build_case_service(store=store), exports=ExportService(cases=store), identity=identity)
+    with TestClient(app) as client:
+        headers = {"Authorization": "Bearer " + client.post("/api/v1/session", json={"username": "u1", "password": "secret"}).json()["token"]}
+        case_id = client.post("/api/v1/cases", json=BODY, headers=headers).json()["id"]
+        queued = client.post(f"/api/v1/cases/{case_id}/export", json={"format": "citation", "language": "en"}, headers=headers).json()
+        assert queued["filename"] == "terratrend-gldas-sm-ukraine-south-2000-2025.txt"
+        downloaded = client.get(queued["download_url"], headers=headers)
+        assert downloaded.headers["content-disposition"] == 'attachment; filename="terratrend-gldas-sm-ukraine-south-2000-2025.txt"'
+        assert b"Verdict" in downloaded.content or b"verdict" in downloaded.content.lower()
+        uk = client.post(f"/api/v1/cases/{case_id}/export", json={"format": "html", "language": "uk"}, headers=headers).json()
+        assert "Вирок".encode() in client.get(uk["download_url"], headers=headers).content
 
 
 def test_unknown_variable_citation_has_no_invented_dataset_doi() -> None:

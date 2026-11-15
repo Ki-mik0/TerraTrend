@@ -176,3 +176,12 @@ def test_cmr_registers_once_and_reload_is_admin_only() -> None:
         assert reloaded.status_code == 201
         assert client.get(f"/api/v1/regions/{region_id}").status_code == 404
         assert client.get("/api/v1/variables/smap_l_band_2015").status_code == 200
+
+
+def test_regions_carry_ukrainian_names() -> None:
+    with TestClient(create_app()) as client:
+        token = client.post("/api/v1/session/guest").json()["token"]
+        regions = client.get("/api/v1/regions", headers={"Authorization": f"Bearer {token}"}).json()
+        names = {item["id"]: item["name_uk"] for item in regions}
+        assert names["ukraine_south"] == "Південь України" and names["arctic"] == "Арктика"
+        assert all(item["name_uk"] for item in regions)

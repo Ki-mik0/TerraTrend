@@ -42,7 +42,8 @@ async def test_live_catalog_and_radar() -> None:
     assert await catalog.get_variable("nope") is None
     assert await catalog.search_regions("ukraine")
     feed = await LiveRadar(seed_radar()).feed()
-    assert feed and {"id", "variable_id", "region_id", "case_id"} <= set(feed[0])
+    assert feed and {"id", "variable_id", "region_id", "open_with"} <= set(feed[0])
+    assert "case_id" not in feed[0]  # a radar card is not a case; a fake id would end in case_not_found
 
 
 async def test_live_case_tools_respect_owner() -> None:

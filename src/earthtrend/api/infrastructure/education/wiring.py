@@ -17,7 +17,7 @@ from earthtrend.api.application.education.ports import (
 )
 from earthtrend.api.application.education.service import EducationService
 from earthtrend.api.application.shared.cache import CachePort
-from earthtrend.api.infrastructure.education.lab import StubLab
+from earthtrend.api.infrastructure.education.lab import AnalyticsLab
 from earthtrend.api.infrastructure.education.memory import MemoryEducationStore
 from earthtrend.api.infrastructure.education.quizzes import MemoryQuizBank
 from earthtrend.api.infrastructure.education.sql import SqlEducationStore
@@ -38,7 +38,7 @@ def build_education_service(
         lessons=lessons,
         store=store or MemoryEducationStore(),
         quizzes=quizzes or MemoryQuizBank(),
-        lab=lab or StubLab(),
+        lab=lab or AnalyticsLab(),
         cache=cache or MemoryCache(),
         cases=cases,
         links=links,
@@ -59,4 +59,7 @@ def education_from_env(
         store = SqlEducationStore(create_async_engine(url, pool_pre_ping=True, pool_size=5, max_overflow=5))
         service = build_education_service(lessons=lessons, store=store, cache=cache, cases=cases, links=links)
         return service, store.prepare
-    return build_education_service(lessons=lessons, cache=cache, cases=cases, links=links), None
+    from earthtrend.api.infrastructure.shared.snapshot import persist
+
+    store = persist(MemoryEducationStore(), "education", ("assignments", "submissions", "badges", "progress", "quiz_attempts"))
+    return build_education_service(lessons=lessons, store=store, cache=cache, cases=cases, links=links), None

@@ -45,6 +45,9 @@ class CaseResponse(BaseModel):
     job_id: str | None = None
     verdict: dict[str, str] | None = None
     evidence_version: str | None = None
+    datasets_version: str = ""
+    slope_decade: float | None = None
+    direction: str | None = None
     links: dict[str, str] = Field(default_factory=dict)
 
 

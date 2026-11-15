@@ -17,6 +17,12 @@ class RegisterRequest(BaseModel):
 
 class SessionResponse(BaseModel):
     token: str
+    expires_at: int = Field(description="Unix seconds when the token stops working; refresh before then.")
+
+
+class RefreshRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    token: str = Field(min_length=1, max_length=4096)
 
 
 class SessionReadResponse(BaseModel):

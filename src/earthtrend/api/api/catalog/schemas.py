@@ -47,6 +47,7 @@ class RegionResponse(BaseModel):
     status: str
     geometry: dict | None = None
     ring: list[float] | None = None
+    name_uk: str = ""
 
 
 class PotentialResponse(BaseModel):

@@ -85,6 +85,7 @@ def dump_product(product: AnalysisProduct) -> dict[str, Any]:
         "datasets_version": product.datasets_version,
         "algorithm_version": product.algorithm_version,
         "result_hash": product.result_hash,
+        "ai_opinion": None if product.ai_opinion is None else _opinion(product.ai_opinion),
     }
 
 
@@ -99,12 +100,14 @@ def load_product(data: dict[str, Any]) -> AnalysisProduct:
         datasets_version=data["datasets_version"],
         algorithm_version=data["algorithm_version"],
         result_hash=data["result_hash"],
+        ai_opinion=None if data.get("ai_opinion") is None else _load_opinion(data["ai_opinion"]),
     )
 
 
 def seal(product: AnalysisProduct) -> AnalysisProduct:
     payload = dump_product(product)
     payload.pop("result_hash")
+    payload.pop("ai_opinion")
     digest = hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     return AnalysisProduct(
         verdict=product.verdict,
@@ -116,6 +119,7 @@ def seal(product: AnalysisProduct) -> AnalysisProduct:
         datasets_version=product.datasets_version,
         algorithm_version=product.algorithm_version,
         result_hash=digest,
+        ai_opinion=product.ai_opinion,
     )
 
 

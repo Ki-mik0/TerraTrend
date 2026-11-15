@@ -47,3 +47,23 @@ def test_tile_products_list() -> None:
         assert products[0]["years"][0] == 2000 and "trend" in products[0]["products"]
         assert products[0]["tile_url"].startswith("/api/v1/tiles/{product}/{z}/{x}/{y}.png?variable_id=merra2_t2m")
         assert len(client.get("/api/v1/tiles/products").json()) == 6
+
+
+def test_computed_grid_has_finite_vmax_new_version_and_renders() -> None:
+    dates = [f"{2007 + month // 12}-{month % 12 + 1:02d}-01" for month in range(144)]
+    body = {
+        "variable_id": "merra2_t2m", "period": "2007-2018", "season": "annual", "dates": dates,
+        "lat": [48, 50], "lon": [30, 32], "values": [[[0.2 + 0.001 * month, 0.3], [0.25, 0.28 - 0.002 * month]] for month in range(len(dates))],
+    }
+    with TestClient(create_app()) as client:
+        created = client.post("/api/v1/tiles/products", json=body)
+        assert created.status_code == 201
+        grid = created.json()
+        assert grid["vmax"] > 0 and grid["data_version"].count("-") >= 1
+        assert grid["bbox"][0] < 30 < 32 < grid["bbox"][2]
+        listed = client.get("/api/v1/tiles/products", params={"variable_id": "merra2_t2m"}).json()
+        assert {item["period"] for item in listed} == {"2000-2024", "2007-2018"}  # the seed stays beside it
+        tile = client.get("/api/v1/tiles/trend/3/4/2.png", params={"variable_id": "merra2_t2m", "period": "2007-2018"})
+        assert tile.status_code == 200
+        again = client.post("/api/v1/tiles/products", json={**body, "values": [[[0.2 - 0.003 * month, 0.3 + 0.002 * month], [0.25, 0.28]] for month in range(len(dates))]})
+        assert again.json()["data_version"] != grid["data_version"]

@@ -179,7 +179,16 @@ class LiveRadar:
     async def feed(self) -> list[dict[str, Any]]:
         items = await self._radar.feed(feed="strongest")
         return [
-            {"id": item.id, "variable_id": item.variable_id, "region_id": item.region_id, "case_id": item.case_id}
+            # A radar card is not a case yet: to look closer, the assistant opens one with `analyze`.
+            {
+                "id": item.id,
+                "variable_id": item.variable_id,
+                "region_id": item.region_id,
+                "season": item.season,
+                "direction": item.direction,
+                "slope_decade": item.slope_decade,
+                "open_with": "analyze",
+            }
             for item in items
         ]
 

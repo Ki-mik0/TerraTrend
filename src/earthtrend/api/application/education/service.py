@@ -249,6 +249,12 @@ class EducationService:
                 return demo
         raise EducationError("demo_not_found", "Демо не знайдено")
 
+    async def demo_progress(self, demo_id: str, *, user_id: str) -> tuple[DemoScenario, DemoProgress]:
+        """The steps this user already finished in a demo. A demo never opened has none."""
+        demo = await self.get_demo(demo_id)
+        progress = await self._store.get_progress(user_id, demo_id) or DemoProgress(user_id=user_id, demo_id=demo_id)
+        return demo, progress
+
     async def complete_demo_step(self, demo_id: str, step: int, *, user_id: str) -> tuple[DemoProgress, Badge | None]:
         demo = await self.get_demo(demo_id)
         progress = await self._store.get_progress(user_id, demo_id) or DemoProgress(user_id=user_id, demo_id=demo_id)

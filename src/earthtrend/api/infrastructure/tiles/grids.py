@@ -13,6 +13,7 @@ seed is served, so the map works before the first analytics run.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import zlib
 from collections import OrderedDict
@@ -90,6 +91,12 @@ class FileGridStore:
         index = self.root / "index.json"
         if not index.exists():
             return self._seed
+        listed = await self._listed(index)
+        # Analytics grids win; the seed keeps every variable, period and season they do not cover yet.
+        covered = {(item.variable_id, item.period, item.season) for item in listed}
+        return listed + [item for item in self._seed if (item.variable_id, item.period, item.season) not in covered]
+
+    async def _listed(self, index: Path) -> list[GridProduct]:
         mtime = index.stat().st_mtime
         if self._index is not None and self._index[0] == mtime:
             return self._index[1]
@@ -162,6 +169,19 @@ class FileGridStore:
         ai = product.ai_class if product.ai_class is not None else np.zeros(slope.shape, dtype=np.int64)
         step = product.ai_step_prob if product.ai_step_prob is not None else np.zeros(slope.shape)
         path = self.root / f"{file_name}.npz"
+        finite = np.abs(slope[np.isfinite(slope)])
+        vmax = float(finite.max()) if finite.size and float(finite.max()) > 0 else 1.0
+        # The content hash makes a recomputed grid a new version, so stored PNGs of the old one are never served.
+        digest = hashlib.sha256(np.ascontiguousarray(slope).tobytes() + np.ascontiguousarray(sig).tobytes()).hexdigest()[:10]
+        version = f"{product.summary.analytics_version}-{digest}"
+        resolution = float(abs(product.lat[1] - product.lat[0])) if len(product.lat) > 1 else 1.0
+        half = resolution / 2
+        bbox = (
+            float(np.min(product.lon)) - half,
+            float(np.min(product.lat)) - half,
+            float(np.max(product.lon)) + half,
+            float(np.max(product.lat)) + half,
+        )
 
         def _write() -> None:
             self.root.mkdir(parents=True, exist_ok=True)
@@ -174,11 +194,11 @@ class FileGridStore:
                 "variable_id": variable_id,
                 "period": period,
                 "season": season,
-                "version": product.summary.analytics_version,
+                "version": version,
                 "file": file_name,
-                "bbox": [float(np.min(product.lon)), float(np.min(product.lat)), float(np.max(product.lon)), float(np.max(product.lat))],
-                "resolution": float(abs(product.lat[1] - product.lat[0])) if len(product.lat) > 1 else 1.0,
-                "vmax": float(np.nanmax(np.abs(slope))) if slope.size else 1.0,
+                "bbox": list(bbox),
+                "resolution": resolution,
+                "vmax": vmax,
                 "years": [],
             }
             current["products"] = [item for item in current.get("products", []) if item.get("file") != file_name]
@@ -191,10 +211,10 @@ class FileGridStore:
             variable_id=variable_id,
             period=period,
             season=season,
-            version=product.summary.analytics_version,
-            bbox=(float(np.min(product.lon)), float(np.min(product.lat)), float(np.max(product.lon)), float(np.max(product.lat))),
-            resolution=float(abs(product.lat[1] - product.lat[0])) if len(product.lat) > 1 else 1.0,
-            vmax=float(np.nanmax(np.abs(slope))) if slope.size else 1.0,
+            version=version,
+            bbox=bbox,
+            resolution=resolution,
+            vmax=vmax,
             years=(),
             file=file_name,
         )

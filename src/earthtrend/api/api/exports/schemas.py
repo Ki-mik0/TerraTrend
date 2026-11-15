@@ -20,6 +20,7 @@ ExportFormat = Literal[
 
 class ExportRequest(BaseModel):
     format: ExportFormat
+    language: Literal["uk", "en"] | None = None
 
 
 class ExportResponse(BaseModel):
@@ -28,3 +29,4 @@ class ExportResponse(BaseModel):
     format: str
     status: str
     download_url: str | None = None
+    filename: str | None = None

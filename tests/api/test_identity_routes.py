@@ -44,7 +44,7 @@ def test_session_keys_audit_and_review() -> None:
         opened = client.post("/api/v1/session", json={"username": "ada", "password": "secret"})
         assert opened.status_code == 201
         assert opened.headers["content-type"].startswith("application/json")
-        assert set(opened.json()) == {"token"}
+        assert set(opened.json()) == {"token", "expires_at"}
         SessionResponse.model_validate(opened.json())
         token = opened.json()["token"]
         read = client.get("/api/v1/session", headers={"Authorization": f"Bearer {token}"})
@@ -143,7 +143,7 @@ def test_register_issues_a_user_token_and_rejects_a_second_name() -> None:
         created = client.post("/api/v1/session/register", json={"username": "ada", "password": "secret"})
         assert created.status_code == 201
         assert created.headers["content-type"].startswith("application/json")
-        assert set(created.json()) == {"token"}
+        assert set(created.json()) == {"token", "expires_at"}
         assert "secret" not in created.text
         assert "password_hash" not in created.text
         SessionResponse.model_validate(created.json())
@@ -172,3 +172,49 @@ def test_register_issues_a_user_token_and_rejects_a_second_name() -> None:
         assert empty.status_code == 422
         assert empty.json()["detail"]["code"] == "password_empty"
         assert "bea" not in {item.username for item in identity._store.users.values()}
+
+
+def test_tokens_expire_and_refresh_within_grace() -> None:
+    from earthtrend.api.infrastructure.identity.crypto import JwtTokens
+
+    now = [1_000_000.0]
+    tokens = JwtTokens("test-secret", ttl=60, grace=600, clock=lambda: now[0])
+    token = tokens.issue(user_id="u1", role="user")
+    assert tokens.read(token) == ("u1", "user")
+    assert tokens.expires_at(token) == 1_000_060
+    now[0] += 61
+    try:
+        tokens.read(token)
+        raise AssertionError("an expired token must not open a session")
+    except Exception as error:
+        assert "expired" in str(error).lower()
+    assert tokens.refreshable(token) == ("u1", "user")
+    now[0] += 600
+    try:
+        tokens.refreshable(token)
+        raise AssertionError("a token past the grace period must not refresh")
+    except Exception as error:
+        assert "refresh" in str(error).lower()
+    forged = JwtTokens("other-secret", clock=lambda: now[0]).issue(user_id="u1", role="admin")
+    try:
+        tokens.refreshable(forged)
+        raise AssertionError("a forged token must not refresh")
+    except Exception as error:
+        assert "signature" in str(error).lower()
+
+
+def test_refresh_route_issues_a_new_working_token() -> None:
+    identity = build_identity_service()
+    asyncio.run(identity.add_user(user_id="u1", username="cat", role="user", password="secret"))
+    with TestClient(app=create_app(identity=identity)) as client:
+        opened = client.post("/api/v1/session", json={"username": "cat", "password": "secret"}).json()
+        assert opened["expires_at"] > 0
+        refreshed = client.post("/api/v1/session/refresh", json={"token": opened["token"]})
+        assert refreshed.status_code == 201
+        body = SessionResponse.model_validate(refreshed.json())
+        assert body.expires_at >= opened["expires_at"]
+        me = client.get("/api/v1/session", headers={"Authorization": f"Bearer {body.token}"}).json()
+        assert me == {"user_id": "u1", "role": "user"}
+        assert client.post("/api/v1/session/refresh", json={"token": "not-a-token"}).status_code == 401
+        guest = client.post("/api/v1/session/guest").json()
+        assert client.post("/api/v1/session/refresh", json={"token": guest["token"]}).status_code == 201

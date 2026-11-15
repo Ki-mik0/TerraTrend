@@ -32,6 +32,7 @@ def _body(record: ExportRecord) -> ExportResponse:
         format=record.format,
         status=record.status,
         download_url=url,
+        filename=record.filename or None,
     )
 
 
@@ -42,7 +43,7 @@ def exports_router(service: ExportService, identity: IdentityService) -> Router:
     ) -> ExportResponse:
         actor = await require_actor(request, identity)
         try:
-            record = await service.create(case_id=case_id, fmt=data.format, actor_id=actor.id)
+            record = await service.create(case_id=case_id, fmt=data.format, actor_id=actor.id, language=data.language)
         except ExportError as error:
             raise _http(error) from error
         return _body(record)
@@ -64,6 +65,11 @@ def exports_router(service: ExportService, identity: IdentityService) -> Router:
             body = await service.download(export_id, actor_id=actor.id)
         except ExportError as error:
             raise _http(error) from error
-        return Response(content=body, media_type=MEDIA[record.format])
+        name = record.filename or f"{record.case_id}.{record.format}"
+        return Response(
+            content=body,
+            media_type=MEDIA[record.format],
+            headers={"Content-Disposition": f'attachment; filename="{name}"'},
+        )
 
     return Router(path="/api/v1", route_handlers=[create_export, get_export, download_export])
