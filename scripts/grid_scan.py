@@ -150,11 +150,11 @@ def assemble(parameter: str, n_months: int) -> np.ndarray | None:
     return cube
 
 
-def frames(cube: np.ndarray, dates: list[date], season: str) -> dict[int, np.ndarray]:
-    """Mean anomaly (vs the 1991-2020 monthly climatology) of each year or season, per cell."""
+def frames(cube: np.ndarray, dates: list[date], season: str, baseline: tuple[int, int] = BASELINE) -> dict[int, np.ndarray]:
+    """Mean anomaly (vs the baseline monthly climatology) of each year or season, per cell."""
     years = np.array([d.year for d in dates])
     months = np.array([d.month for d in dates])
-    base = (years >= BASELINE[0]) & (years <= BASELINE[1])
+    base = (years >= baseline[0]) & (years <= baseline[1])
     anomaly = np.empty_like(cube)
     for month in range(1, 13):
         rows = months == month
@@ -189,9 +189,72 @@ class _quiet:
         self._w.__exit__(*exc)
 
 
+def grid_products(
+    cube: np.ndarray,
+    dates: list[date],
+    *,
+    file_stem: str,
+    variables: list[str],
+    units: str,
+    source: str,
+    version: str,
+    baseline: tuple[int, int] = BASELINE,
+) -> list[dict]:
+    """Analyse one global monthly cube for every season, save the grids and return their index rows."""
+    period = f"{dates[0].year}-{dates[-1].year}"
+    rows: list[dict] = []
+    for season in SEASONS:
+        started = time.monotonic()
+        product = analyze_grid(cube.astype(np.float64), LAT, LON, dates, baseline=baseline, season=season, ai=season == "annual")
+        slope = product.fields.slope.astype(np.float32)
+        finite = np.abs(slope[np.isfinite(slope)])
+        if not finite.size:
+            print(f"  {season}: no valid cells", flush=True)
+            continue
+        vmax = float(np.percentile(finite, 98)) or float(finite.max()) or 1.0
+        yearly = frames(cube, dates, season, baseline)
+        spread = np.concatenate([np.abs(f[np.isfinite(f)]) for f in yearly.values()]) if yearly else np.array([1.0])
+        frame_vmax = float(np.percentile(spread, 98)) if spread.size else 1.0
+        frame_vmax = frame_vmax if np.isfinite(frame_vmax) and frame_vmax > 0 else 1.0
+        shape = slope.shape
+        ai = product.ai_class if product.ai_class is not None else np.zeros(shape)
+        step = product.ai_step_prob if product.ai_step_prob is not None else np.zeros(shape)
+        file_name = f"{file_stem}-{period}-{season}"
+        np.savez_compressed(
+            storage() / f"{file_name}.npz",
+            slope=slope,
+            sig_fdr=product.sig_fdr.astype(np.uint8),
+            ai_class=np.clip(np.nan_to_num(ai, nan=0), 0, 4).astype(np.uint8),
+            ai_step_prob=np.nan_to_num(step, nan=0).astype(np.float32),
+            **{f"anomaly_{year}": frame for year, frame in yearly.items()},
+        )
+        summary = product.summary
+        print(
+            f"  {season}: {summary.n_cells_valid} cells, {summary.n_cells_significant} significant (FDR), "
+            f"vmax {vmax:.3g} {units}/decade, {len(yearly)} frames, {time.monotonic() - started:.0f}s",
+            flush=True,
+        )
+        for variable_id in variables:
+            rows.append(
+                {
+                    "variable_id": variable_id,
+                    "period": period,
+                    "season": season,
+                    "version": version,
+                    "file": file_name,
+                    "bbox": [-180.0, -90.0, 180.0, 90.0],
+                    "resolution": 1.0,
+                    "vmax": vmax,
+                    "frame_vmax": frame_vmax,
+                    "years": sorted(yearly),
+                    "source": f"{source}, monthly {period}, 1 degree",
+                }
+            )
+    return rows
+
+
 def analyse(parameters: list[str], last_year: int) -> list[dict]:
     dates = [date(year, month, 1) for year in range(FIRST_YEAR, last_year + 1) for month in range(1, 13)]
-    period = f"{FIRST_YEAR}-{last_year}"
     version = f"power-grid-{datetime.now(UTC):%Y-%m-%d}"
     rows: list[dict] = []
     for parameter in parameters:
@@ -202,52 +265,15 @@ def analyse(parameters: list[str], last_year: int) -> list[dict]:
         variables = sorted(v for v, (p, _, _) in POWER_PARAMETERS.items() if p == parameter)
         units = next(u for p, u, _ in POWER_PARAMETERS.values() if p == parameter)
         print(f"{parameter}: {np.isfinite(cube[0]).mean():.0%} of cells have data -> {', '.join(variables)}", flush=True)
-        for season in SEASONS:
-            started = time.monotonic()
-            product = analyze_grid(cube.astype(np.float64), LAT, LON, dates, baseline=BASELINE, season=season, ai=season == "annual")
-            slope = product.fields.slope.astype(np.float32)
-            finite = np.abs(slope[np.isfinite(slope)])
-            if not finite.size:
-                print(f"  {season}: no valid cells", flush=True)
-                continue
-            vmax = float(np.percentile(finite, 98)) or float(finite.max()) or 1.0
-            yearly = frames(cube, dates, season)
-            spread = np.concatenate([np.abs(f[np.isfinite(f)]) for f in yearly.values()]) if yearly else np.array([1.0])
-            frame_vmax = float(np.percentile(spread, 98)) or 1.0
-            shape = slope.shape
-            ai = product.ai_class if product.ai_class is not None else np.zeros(shape)
-            step = product.ai_step_prob if product.ai_step_prob is not None else np.zeros(shape)
-            file_name = f"power-{parameter}-{period}-{season}"
-            np.savez_compressed(
-                storage() / f"{file_name}.npz",
-                slope=slope,
-                sig_fdr=product.sig_fdr.astype(np.uint8),
-                ai_class=np.clip(np.nan_to_num(ai, nan=0), 0, 4).astype(np.uint8),
-                ai_step_prob=np.nan_to_num(step, nan=0).astype(np.float32),
-                **{f"anomaly_{year}": frame for year, frame in yearly.items()},
-            )
-            summary = product.summary
-            print(
-                f"  {season}: {summary.n_cells_valid} cells, {summary.n_cells_significant} significant (FDR), "
-                f"vmax {vmax:.3g} {units}/decade, {len(yearly)} frames, {time.monotonic() - started:.0f}s",
-                flush=True,
-            )
-            for variable_id in variables:
-                rows.append(
-                    {
-                        "variable_id": variable_id,
-                        "period": period,
-                        "season": season,
-                        "version": version,
-                        "file": file_name,
-                        "bbox": [-180.0, -90.0, 180.0, 90.0],
-                        "resolution": 1.0,
-                        "vmax": vmax,
-                        "frame_vmax": frame_vmax,
-                        "years": sorted(yearly),
-                        "source": f"NASA POWER {parameter} (MERRA-2), monthly {period}, 1 degree",
-                    }
-                )
+        rows += grid_products(
+            cube,
+            dates,
+            file_stem=f"power-{parameter}",
+            variables=variables,
+            units=units,
+            source=f"NASA POWER {parameter} (MERRA-2)",
+            version=version,
+        )
     return rows
 
 

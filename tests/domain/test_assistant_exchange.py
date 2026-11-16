@@ -152,3 +152,14 @@ def test_message_defaults_to_ukrainian_for_unknown_language() -> None:
 def test_split_chunks_keeps_sentences() -> None:
     assert split_chunks("Один. Два! Три") == ["Один. ", "Два! ", "Три"]
     assert split_chunks("") == [""]
+
+
+def test_readable_rounds_for_prose_and_roundings_allow_it() -> None:
+    from earthtrend.api.domain.shared.numbers import readable, with_roundings
+
+    assert readable(0.23456) == "0.23"
+    assert readable(-0.00045678) == "-0.000457"
+    assert readable(12.0) == "12"
+    allowed = with_roundings({"-0.00045678"})
+    assert {"-0.000457", "-0.00046", "0"} <= allowed
+    assert "-0.0005" in allowed and "1" not in allowed

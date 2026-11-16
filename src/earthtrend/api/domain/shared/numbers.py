@@ -5,6 +5,7 @@ Signs and comma decimals are kept. Digits inside ids (`case_1`, `merra2_t2m`, `v
 
 from __future__ import annotations
 
+import math
 import re
 from typing import Any
 
@@ -36,3 +37,21 @@ def collect_numbers(value: Any) -> set[str]:
     if isinstance(value, (list, tuple, set, frozenset)):
         return set().union(*(collect_numbers(item) for item in value)) if value else set()
     return set()
+
+
+def with_roundings(numbers: set[str], max_decimals: int = 6) -> set[str]:
+    """The numbers plus every rounding of them to 0..max_decimals places, so prose may round a fact."""
+    out = set(numbers)
+    for token in numbers:
+        value = float(token)
+        for places in range(max_decimals + 1):
+            out.add(normalize_number(f"{round(value, places):.{places}f}"))
+    return out
+
+
+def readable(value: float) -> str:
+    """A fact rounded for prose: two decimals, or three significant figures for small values."""
+    if value == 0 or abs(value) >= 0.1:
+        return normalize_number(f"{value:.2f}")
+    places = min(6, 2 - math.floor(math.log10(abs(value))))
+    return normalize_number(f"{value:.{places}f}")

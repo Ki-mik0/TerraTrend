@@ -59,7 +59,7 @@ async def test_template_answer_uses_only_facts() -> None:
     template = TemplateNarrator()
     facts = [{"tool": "analyze_case", "case_id": "case_1", "verdict": "strong", "slope_decade": -0.03}]
     uk = await template.answer(question="q", language="uk", mode="investigate", facts=facts, case_ids=["case_1"])
-    assert "-0.03" in uk and "strong" in uk and "case_1" in uk
+    assert "-0.03" in uk and "сильні докази" in uk and "strong" not in uk and "case_1" in uk
     en = await template.answer(question="q", language="en", mode="investigate", facts=facts, case_ids=["case_1"])
     assert en.startswith("Case case_1.") and "-0.03" in en
     bare = await template.answer(
@@ -163,3 +163,33 @@ def test_narrator_from_env(monkeypatch) -> None:
     assert narrator_from_env()._model._model == DEFAULT_MODEL
     monkeypatch.setenv("OPENROUTER_MODEL", "anthropic/claude-sonnet-4.5")
     assert narrator_from_env()._model._model == "anthropic/claude-sonnet-4.5"
+
+
+async def test_template_answer_rounds_the_slope_and_stays_inside_facts() -> None:
+    from earthtrend.api.domain.assistant.exchange import answer_stays_inside_facts, collect_numbers
+    from earthtrend.api.domain.shared.numbers import with_roundings
+
+    facts = [{"tool": "analyze_case", "case_id": "case_1", "slope_decade": 0.23456789}]
+    text = await TemplateNarrator().answer(
+        question="q", language="uk", mode="investigate", facts=facts, case_ids=["case_1"]
+    )
+    assert "0.23." in text and "0.2345" not in text
+    assert answer_stays_inside_facts(text, with_roundings(collect_numbers(facts)))
+
+
+@pytest.mark.parametrize(
+    ("question", "variable_id", "region_id", "season"),
+    [
+        ("Чи гріється Арктика взимку?", "merra2_t2m", "arctic", "DJF"),
+        ("Чи висихає південь України влітку?", "gldas_sm", "ukraine_south", "JJA"),
+        ("Is Antarctica warming?", "merra2_t2m", "antarctica", "JJA"),
+        ("Більше опадів у Карпатах?", "gpm_imerg", "carpathians_high", "JJA"),
+        ("What happens in Kyiv in spring?", "merra2_t2m", "kyiv", "MAM"),
+    ],
+)
+async def test_template_plan_reads_place_variable_and_season(question, variable_id, region_id, season) -> None:
+    steps = await TemplateNarrator().plan(
+        question=question, language="uk", mode="investigate", catalog_ids={"gldas_sm", "merra2_t2m", "gpm_imerg", "airs_profile"}
+    )
+    analyze = next(step for step in steps if step.tool == "analyze_case")
+    assert analyze.input == {"variable_id": variable_id, "region_id": region_id, "season": season}

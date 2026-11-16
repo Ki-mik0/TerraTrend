@@ -297,11 +297,12 @@ export function Slope({ value, unit, digits = 3, className }: { value: number; u
   );
 }
 
-/** Where the numbers of a case come from: a curated product, live NASA POWER, or a labelled demo series. */
+/** Where the numbers of a case come from: a curated product, NASA Earthdata grids, live NASA POWER, or a labelled demo series. */
 export function DataSourceChip({ version }: { version: string | null | undefined }) {
   const tr = useTr();
   if (!version) return null;
   if (version.startsWith("nasa-power")) return <Chip tone="success"><Term id="nasa_power" bare>NASA POWER</Term></Chip>;
+  if (version.startsWith("earthdata")) return <Chip tone="success"><Term id="nasa_earthdata" bare>NASA Earthdata</Term></Chip>;
   if (version.startsWith("demo")) return <Chip tone="warning"><Term id="demo_data" bare>{tr("демо-дані", "demo data")}</Term></Chip>;
   return <Chip tone="accent">{tr("продукт аналітики", "analytics product")}</Chip>;
 }
@@ -319,23 +320,32 @@ export function Term({ id, children, bare = false }: { id: TermId; children?: Re
   const text = language === "en" ? textEn : textUk;
   return (
     <span className="relative inline-flex items-center" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
-      <button
-        type="button"
-        className="inline-flex items-center gap-1 underline decoration-dotted decoration-1 underline-offset-4 outline-none focus-visible:rounded focus-visible:ring-2 focus-visible:ring-accent"
+      {/* A span, not a <button>: terms sit inside clickable cards, and a button may not contain a button. */}
+      <span
+        role="button"
+        tabIndex={0}
+        className="inline-flex cursor-help items-center gap-1 underline decoration-dotted decoration-1 underline-offset-4 outline-none focus-visible:rounded focus-visible:ring-2 focus-visible:ring-accent"
         aria-describedby={open ? tipId : undefined}
+        aria-expanded={open}
         onClick={(event) => {
           event.stopPropagation();
+          event.preventDefault();
           setOpen((value) => !value);
         }}
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
         onKeyDown={(event) => {
           if (event.key === "Escape") setOpen(false);
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            event.stopPropagation();
+            setOpen((value) => !value);
+          }
         }}
       >
         {children ?? title}
         {!bare && <CircleHelp size={13} className="shrink-0 opacity-60" aria-hidden />}
-      </button>
+      </span>
       {open && (
         <span
           id={tipId}

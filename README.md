@@ -53,6 +53,40 @@ const { data, error } = await api.POST("/api/v1/cases", { body: { variable_id, r
 
 Якщо бекенд перейменує поле чи шлях, `npm --prefix web run typecheck` покаже кожне місце у фронті, яке треба виправити.
 
+## Дані NASA
+
+Карта трендів, радар і справи читають реальні дані з `STORAGE_ROOT` (`data/storage`, у git не потрапляє). Скрипти можна переривати: повторний запуск докачує лише те, чого бракує. Запущений API підхоплює нові файли без перезапуску.
+
+| Скрипт | Звідки | Що будує |
+|---|---|---|
+| `scripts/radar_scan.py` | NASA POWER, без акаунта | радар: 16 регіонів × 5 змінних |
+| `scripts/grid_scan.py` | NASA POWER, без акаунта | сітки 1° для 7 змінних (MERRA-2 через POWER) |
+| `scripts/earthdata_grids.py` | NASA Earthdata, потрібен акаунт | сітки 1° і місячні ряди для 30 змінних каталогу |
+
+```powershell
+.venv/Scripts/python scripts/radar_scan.py
+.venv/Scripts/python scripts/grid_scan.py --workers 3
+.venv/Scripts/python scripts/earthdata_grids.py --list    # джерела і змінні
+.venv/Scripts/python scripts/earthdata_grids.py           # усе, кілька годин; --only gldas airs — частина
+```
+
+Для Earthdata:
+
+1. Зареєструйся на [urs.earthdata.nasa.gov](https://urs.earthdata.nasa.gov).
+2. У розділі Applications → Authorized Apps схвали «NASA GESDISC DATA ARCHIVE».
+3. Один раз увійди: `python -c "import earthaccess; earthaccess.login(persist=True)"`. Логін збережеться в `~/_netrc`.
+4. Встанови залежності: `pip install -e ".[data]"`.
+
+Як скрипт бере дані:
+
+- з колекцій GES DISC (MERRA-2, AIRS, денний IMERG) — лише потрібну змінну, вирізану на сервері через Cloud OPeNDAP;
+- HDF5 (GLDAS, IMERG, OMI, NSIDC, колір океану) — цілим файлом у пам'ять;
+- HDF4 MODIS — на диск, після читання файл одразу видаляється.
+
+Кожна гранула одразу зводиться до сітки 1° і кешується в `grids/earthdata-raw/`. Місячні куби лягають у `grids/series/`. З них справа рахує ряд для регіону: середнє клітинок усередині рамки, зважене за площею. Такі справи мають позначку «NASA Earthdata».
+
+`--heavy` додає `modis_aod` (MYD08_M3, близько 100 ГБ). Без реальних даних лишаються дві змінні: `modis_phenology` і `season_bounds`.
+
 ## Тести
 
 ```powershell

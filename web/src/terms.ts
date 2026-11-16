@@ -105,6 +105,12 @@ export const TERMS = {
     "NASA POWER",
     "Real monthly NASA data combining satellites and climate models. For a region we average several points.",
   ],
+  nasa_earthdata: [
+    "NASA Earthdata",
+    "Реальні щомісячні дані саме тієї місії NASA, що названа у змінній (MERRA-2, GLDAS, IMERG, MODIS, OMI, GRACE, AIRS, NSIDC). Для регіону беремо середнє з клітинок сітки 1° усередині нього, зважене за площею.",
+    "NASA Earthdata",
+    "Real monthly data from the very NASA mission named in the variable (MERRA-2, GLDAS, IMERG, MODIS, OMI, GRACE, AIRS, NSIDC). For a region we take the area-weighted mean of the 1° grid cells inside it.",
+  ],
 } as const;
 
 export type TermId = keyof typeof TERMS;

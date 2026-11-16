@@ -122,3 +122,56 @@ def test_case_response_carries_slope_and_direction() -> None:
             headers={"Authorization": f"Bearer {token}"},
         ).json()
         assert isinstance(created["slope_decade"], float) and created["direction"] in {"increasing", "decreasing", "none"}
+
+
+def _grid_series(root, variable_id: str = "omi_no2", first_year: int = 2005, years: int = 15) -> None:
+    """A synthetic global cube: 2 inside the test box rising 0.1 per year, 100 everywhere else."""
+    import json
+
+    import numpy as np
+
+    months = [f"{year}-{month:02d}" for year in range(first_year, first_year + years) for month in range(1, 13)]
+    cube = np.full((len(months), 180, 360), 100.0, dtype=np.float32)
+    lat = 89.5 - np.arange(180.0)
+    lon = -179.5 + np.arange(360.0)
+    rows = np.flatnonzero((lat >= 44) & (lat <= 52))
+    cols = np.flatnonzero((lon >= 22) & (lon <= 40))
+    for index, month in enumerate(months):
+        cube[index][np.ix_(rows, cols)] = 2.0 + 0.1 * (int(month[:4]) - first_year)
+    cube[0, rows[0], cols[0]] = np.nan  # a missing cell is skipped, not counted as zero
+    root.mkdir(parents=True, exist_ok=True)
+    np.save(root / f"{variable_id}.npy", cube)
+    (root / f"{variable_id}.json").write_text(
+        json.dumps({"dates": months, "units": "1e15 molec/cm2", "dataset": "NASA Earthdata OMI OMNO2d", "aggregation": "mean"}),
+        encoding="utf-8",
+    )
+
+
+def test_grid_series_is_the_area_weighted_box_mean(tmp_path) -> None:
+    from earthtrend.api.infrastructure.cases.sources import GRID_VERSION, GridSeriesSource
+
+    _grid_series(tmp_path)
+    grids = GridSeriesSource(tmp_path)
+    assert grids.supports("omi_no2") and not grids.supports("modis_ndvi")
+    series = grids.fetch(CaseSpec("omi_no2", "ukraine", "1990-01", "2030-12"), (22.0, 44.0, 40.0, 52.0), 600_000.0)
+    assert series is not None
+    assert series["meta"]["dataset_version"] == GRID_VERSION and series["meta"]["units"] == "1e15 molec/cm2"
+    assert series["dates"][0] == "2005-01-01" and len(series["values"]) == 180  # clipped to the data years
+    assert series["values"][0] == pytest.approx(2.0) and series["values"][-1] == pytest.approx(3.4)
+    # a box smaller than a cell takes the nearest cell; a too short overlap gives nothing
+    tiny = grids.fetch(CaseSpec("omi_no2", "kyiv", "2005-01", "2019-12"), (30.4, 50.3, 30.6, 50.5), 800.0)
+    assert tiny is not None and tiny["values"][12] == pytest.approx(2.1)
+    assert grids.fetch(CaseSpec("omi_no2", "kyiv", "2015-01", "2030-12"), (30.4, 50.3, 30.6, 50.5), None) is None
+
+
+async def test_sourced_analysis_uses_the_grid_before_power_and_demo(tmp_path) -> None:
+    from earthtrend.api.infrastructure.cases.sources import GRID_VERSION, GridSeriesSource
+
+    _grid_series(tmp_path)
+    analysis = SourcedAnalysis(MemoryAnalysis(), seed_catalog(), power=sources._OfflinePower(), grids=GridSeriesSource(tmp_path))
+    product = await analysis.run(CaseSpec("omi_no2", "ukraine", "2005-01", "2019-12"))
+    assert product.datasets_version == GRID_VERSION and product.verdict.direction == "increasing"
+    series = await analysis.series_for(CaseSpec("omi_no2", "ukraine", "2005-01", "2019-12"))
+    assert series is not None and series["meta"]["dataset_id"] == "NASA Earthdata OMI OMNO2d"
+    demo = await analysis.run(CaseSpec("modis_ndvi", "sahel", "2000-01", "2019-12"))
+    assert demo.datasets_version == DEMO_VERSION

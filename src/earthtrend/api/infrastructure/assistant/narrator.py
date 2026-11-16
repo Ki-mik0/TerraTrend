@@ -8,6 +8,7 @@ from typing import Any
 import httpx
 
 from earthtrend.api.domain.assistant.exchange import ALLOWED_TOOLS, ToolStep, message
+from earthtrend.api.domain.shared.numbers import readable
 from earthtrend.api.infrastructure.shared.openrouter import (
     DEFAULT_MODEL,
     OpenRouter,
@@ -17,9 +18,36 @@ from earthtrend.api.infrastructure.shared.openrouter import (
 )
 
 _VARIABLE_HINTS: tuple[tuple[tuple[str, ...], str], ...] = (
-    (("ґрунт", "сох", "посух", "волог", "soil", "drought", "dry"), "gldas_sm"),
-    (("темпер", "спек", "тепл", "жар", "temperat", "heat", "warm"), "merra2_t2m"),
+    (("ґрунт", "сох", "висих", "пересих", "посух", "волог", "soil", "drought", "dry"), "gldas_sm"),
+    (("темпер", "спек", "тепл", "жар", "гріє", "гріт", "потепл", "temperat", "heat", "warm"), "merra2_t2m"),
+    (("опад", "дощ", "злив", "rain", "precip"), "gpm_imerg"),
 )
+_REGION_HINTS: tuple[tuple[tuple[str, ...], str], ...] = (
+    (("південь україн", "півдні україн", "southern ukraine", "south of ukraine"), "ukraine_south"),
+    (("північ україн", "півночі україн", "northern ukraine", "north of ukraine"), "ukraine_north"),
+    (("київська обл", "kyiv oblast", "kyiv region"), "kyiv_oblast"),
+    (("києв", "київ", "kyiv", "kiev"), "kyiv"),
+    (("дніпр", "dnipro", "dnieper"), "dnipro"),
+    (("карпат", "carpathian"), "carpathians_high"),
+    (("чорне море", "чорного моря", "чорному морі", "black sea"), "black_sea"),
+    (("україн", "ukrain"), "ukraine"),
+    (("північна європ", "північній європ", "northern europe"), "ar6_neu"),
+    (("сахел", "sahel"), "sahel"),
+    (("амазон", "amazon"), "amazon"),
+    (("індо", "індії", "індія", "ганг", "india", "ganges", "indo-gang"), "indo_gangetic"),
+    (("схід сша", "сході сша", "eastern us", "eastern united states"), "eastern_us"),
+    (("каліфорн", "californ"), "california"),
+    (("антаркт", "antarct"), "antarctica"),
+    (("арктик", "arctic"), "arctic"),
+)
+_VERDICTS = {
+    "proven": ("доведено", "proven"),
+    "strong": ("сильні докази", "strong evidence"),
+    "likely": ("ймовірно", "likely"),
+    "suspicious": ("підозріло", "suspicious"),
+    "no_evidence": ("немає доказів", "no evidence"),
+    "inadmissible": ("не можна розглянути", "inadmissible"),
+}
 _SEASON_HINTS: tuple[tuple[tuple[str, ...], str], ...] = (
     (("літ", "summer"), "JJA"),
     (("зим", "winter"), "DJF"),
@@ -64,7 +92,9 @@ class TemplateNarrator:
         if not catalog_ids:
             return []
         hinted = _pick(question, _VARIABLE_HINTS)
-        variable_id = hinted if hinted in catalog_ids else sorted(catalog_ids)[0]
+        fallback = "merra2_t2m" if "merra2_t2m" in catalog_ids else sorted(catalog_ids)[0]
+        variable_id = hinted if hinted in catalog_ids else fallback
+        region_id = _pick(question, _REGION_HINTS) or DEFAULT_REGION
         season = _pick(question, _SEASON_HINTS) or "JJA"
         uk = language == "uk"
         steps = [
@@ -72,7 +102,7 @@ class TemplateNarrator:
             ToolStep(
                 "analyze_case",
                 "Перевірити тренд у регіоні" if uk else "Check the trend in the region",
-                {"variable_id": variable_id, "region_id": DEFAULT_REGION, "season": season},
+                {"variable_id": variable_id, "region_id": region_id, "season": season},
             ),
             ToolStep("get_evidence", "Прочитати протокол доказів" if uk else "Read the evidence", {}),
         ]
@@ -89,7 +119,11 @@ class TemplateNarrator:
         if not case_ids:
             return message("no_evidence", language)
         verdict = _first_fact(facts, "verdict") or _first_fact(facts, "verdict_code")
+        if isinstance(verdict, str) and verdict in _VERDICTS:
+            verdict = _VERDICTS[verdict][1 if language == "en" else 0]
         slope = _first_fact(facts, "slope_decade")
+        if isinstance(slope, (int, float)) and not isinstance(slope, bool):
+            slope = readable(slope)
         case_list = ", ".join(case_ids)
         if language == "en":
             parts = [f"Case {case_list}."]

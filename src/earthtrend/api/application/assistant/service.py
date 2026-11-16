@@ -34,6 +34,7 @@ from earthtrend.api.domain.assistant.exchange import (
     split_chunks,
     teach_answer_ok,
 )
+from earthtrend.api.domain.shared.numbers import with_roundings
 
 Event = dict[str, Any]
 Handler = Callable[[ToolStep, AssistantExchange], Awaitable[dict[str, Any]]]
@@ -217,7 +218,7 @@ class AssistantService:
         if exchange.mode == "teach" and not teach_answer_ok(draft):
             exchange.warn("teach_rejected")
             return fallback_answer(exchange)
-        allowed = collect_numbers(facts) | numbers_in(exchange.question)
+        allowed = with_roundings(collect_numbers(facts)) | numbers_in(exchange.question)
         if not draft.strip() or not answer_stays_inside_facts(draft, allowed):
             exchange.warn("answer_outside_facts")
             return fallback_answer(exchange)

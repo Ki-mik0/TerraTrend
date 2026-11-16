@@ -2,7 +2,7 @@
 @import "tailwindcss";
 @import "@heroui/styles";
 
-/* Dark mode follows the `.dark` class that next-themes sets on <html>. */
+/* Dark mode follows the `.dark` class that src/theme.tsx (and index.html, before first paint) sets on <html>. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* Brand: the blue → emerald gradient of the landing hero. */

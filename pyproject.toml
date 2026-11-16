@@ -44,6 +44,8 @@ potential = [
     "scikit-learn>=1.5",
 ]
 docs = ["matplotlib"]
+# scripts/earthdata_grids.py: NASA Earthdata login, HDF5 / HDF4 readers, polar grid projection
+data = ["earthaccess>=0.15", "h5py>=3.11", "pyhdf>=0.11", "pyproj>=3.6"]
 
 [dependency-groups]
 dev = [

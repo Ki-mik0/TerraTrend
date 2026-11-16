@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import ReactECharts from "echarts-for-react";
-import { useTheme } from "next-themes";
+import { useTheme } from "../theme";
 
 /** Chart colours follow the theme tokens in index.css; reading them again when the theme flips repaints the chart. */
 function useChartColours() {
